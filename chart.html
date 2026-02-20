@@ -1,0 +1,89 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.7">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Life Balance Pie Chart&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script src="https://cdn.jsdelivr.net/npm/chart.js"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>body { font-family: sans-serif; text-align: center; margin: 50px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>canvas { max-width: 500px; max-height: 500px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>h2 { margin-bottom: 30px; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h2&gt;Life Balance Pie Chart&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;canvas id="lifeBalanceChart"&gt;&lt;/canvas&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Get data from URL query string</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const params = new URLSearchParams(window.location.search);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>const labels = [];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const data = [];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const colors = [</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'#C9CBCF','#8CBA80','#FF6666','#66CCFF','#FF99CC','#33CC99','#CCCC33'</p>
+<p class="p1"><span class="Apple-converted-space">    </span>];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// List of PDF form fields</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const fields = [</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_family',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_friends',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_work',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_sleep',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_eating',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_health',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_self_improvement',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_hobbies',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_service',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_spirituality',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_self_care',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_other1',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>'pct_other2'</p>
+<p class="p1"><span class="Apple-converted-space">    </span>];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Extract values from URL and build chart data</p>
+<p class="p1"><span class="Apple-converted-space">    </span>fields.forEach((f, i) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const val = parseFloat(params.get(f));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (!isNaN(val) &amp;&amp; val &gt; 0) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>labels.push(f.replace('pct_','').replace('_',' '));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>data.push(val);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>const ctx = document.getElementById('lifeBalanceChart').getContext('2d');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>new Chart(ctx, {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>type: 'pie',</p>
+<p class="p1"><span class="Apple-converted-space">      </span>data: {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>labels: labels,</p>
+<p class="p1"><span class="Apple-converted-space">        </span>datasets: [{</p>
+<p class="p1"><span class="Apple-converted-space">          </span>data: data,</p>
+<p class="p1"><span class="Apple-converted-space">          </span>backgroundColor: colors.slice(0,data.length)</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}]</p>
+<p class="p1"><span class="Apple-converted-space">      </span>},</p>
+<p class="p1"><span class="Apple-converted-space">      </span>options: {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>responsive: true,</p>
+<p class="p1"><span class="Apple-converted-space">        </span>plugins: {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>legend: { position: 'bottom' }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>

@@ -77,7 +77,7 @@ const dataValues = [
 
 const ctx = document.getElementById("chartCanvas").getContext("2d");
 
-new Chart(ctx, {
+const chart = new Chart(ctx, {
   type: "pie",
   data: {
     labels: labels,
@@ -116,6 +116,34 @@ new Chart(ctx, {
     }
   }
 }
+});
+document.getElementById("downloadBtn").addEventListener("click", () => {
+  const filename = "life-balance-chart.png";
+  const canvas = chart.canvas;
+
+  // Best method: Blob download (Chrome/Edge/Firefox)
+  if (canvas.toBlob) {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        const dataUrl = canvas.toDataURL("image/png");
+        window.open(dataUrl, "_blank");
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  } else {
+    // Fallback: open in a new tab (Safari-friendly)
+    const dataUrl = canvas.toDataURL("image/png");
+    window.open(dataUrl, "_blank");
+  }
 });
 </script>
 

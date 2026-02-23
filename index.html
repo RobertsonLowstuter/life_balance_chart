@@ -1,231 +1,229 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8" />
   <title>Life Balance Pie Chart</title>
   <script src="chart.js"></script>
   <script src="chartjs-plugin-datalabels.js"></script>
 </head>
+
 <body style="font-family: Arial; text-align: center; padding: 30px; background:#f7f7f7;">
 
   <h2>Life Balance Pie Chart</h2>
 
- <div style="
-  width: 640px;
-  margin: 0 auto;
-  background: white;
-  padding: 18px 18px 22px 18px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-">
-
-  <button id="downloadBtn" style="
-    padding: 10px 14px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    margin-bottom: 12px;
+  <div style="
+    width: 640px;
+    margin: 0 auto;
+    background: white;
+    padding: 18px 18px 22px 18px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   ">
-    Download Chart (PNG)
-  </button>
 
-  <!-- THIS div is the fixed chart area -->
-  <div id="chartArea" style="height: 460px;">
-    <canvas id="chartCanvas"></canvas>
+    <button id="downloadBtn" style="
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 12px;
+    ">
+      Download Chart (PNG)
+    </button>
+
+    <div id="chartArea" style="height: 460px;">
+      <canvas id="chartCanvas"></canvas>
+    </div>
+
   </div>
 
-</div>
+  <script>
+    // ---- Helpers ----
+    function getParamNumber(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const raw = urlParams.get(name);
+      if (raw === null || raw === undefined) return 0;
 
-  <!-- chart script stays exactly as-is below -->
-
-<script>
-  // ---- Helpers ----
-  function getParamNumber(name) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const raw = urlParams.get(name);
-
-    if (raw === null || raw === undefined) return 0;
-
-    // tolerate values like "12.5%" or " 12.5 "
-    const cleaned = ("" + raw).replace("%", "").trim();
-    const n = parseFloat(cleaned);
-    return isNaN(n) ? 0 : n;
-  }
-
-  // ---- Fixed category -> color mapping (unique colors) ----
-  const COLOR_MAP = {
-    "Family": "#CEA8F0",
-    "Friends": "#FFC2E8",
-    "Work": "#D8B6A1",
-    "Sleep/Rest": "#FFF3C5",
-    "Eating/Food Prep": "#D2F1C3",
-    "Health/Fitness": "#C2DCFF",
-    "Self-Improvement": "#FF9999",
-    "Hobbies": "#C1FF72",
-    "Service/Charity": "#FFDE59",
-    "Spirituality": "#FF914D",
-    "Self-Care": "#74A45A",
-    "Other 1": "#6DB4FF",
-    "Other 2": "#997CAB"
-  };
-
-  // ---- Read + transform data (hide zeros + sort desc) ----
-  const rawItems = [
-    { label: "Family", key: "family" },
-    { label: "Friends", key: "friends" },
-    { label: "Work", key: "work" },
-    { label: "Sleep/Rest", key: "sleep" },
-    { label: "Eating/Food Prep", key: "eating" },
-    { label: "Health/Fitness", key: "health" },
-    { label: "Self-Improvement", key: "self_improvement" },
-    { label: "Hobbies", key: "hobbies" },
-    { label: "Service/Charity", key: "service" },
-    { label: "Spirituality", key: "spirituality" },
-    { label: "Self-Care", key: "self_care" },
-    { label: "Other 1", key: "other1" },
-    { label: "Other 2", key: "other2" }
-  ];
-
-  const items = rawItems
-    .map(it => ({ label: it.label, value: getParamNumber(it.key) }))
-    .filter(it => it.value > 0)               // hide zeros
-    .sort((a, b) => b.value - a.value);       // sort largest -> smallest
-
-  const labels = items.map(it => it.label);
-  const dataValues = items.map(it => it.value);
-  const backgroundColors = labels.map(l => COLOR_MAP[l] || "#999999");
-  const total = dataValues.reduce((a, b) => a + b, 0);
-
-  // ---- No data handling (fail loudly, not silently) ----
-  const chartArea = document.getElementById("chartArea");
-  const downloadBtn = document.getElementById("downloadBtn");
-
-  if (!total) {
-    if (chartArea) {
-      chartArea.innerHTML =
-        "<div style='padding:18px;color:#666;line-height:1.4;'>" +
-        "No data received.<br/>" +
-        "Open this page from the PDF button so values are included in the link." +
-        "</div>";
+      // tolerate values like "12.5%" or " 12.5 "
+      const cleaned = ("" + raw).replace("%", "").trim();
+      const n = parseFloat(cleaned);
+      return isNaN(n) ? 0 : n;
     }
-    if (downloadBtn) downloadBtn.disabled = true;
-    // Stop here — don’t try to render a chart
-    throw new Error("No data received (total = 0). Check URL parameters.");
-  }
 
-  // ---- Chart rendering ----
-  const canvasEl = document.getElementById("chartCanvas");
-  const ctx = canvasEl.getContext("2d");
+    // ---- Fixed category -> color mapping (unique colors) ----
+    const COLOR_MAP = {
+      "Family": "#CEA8F0",
+      "Friends": "#FFC2E8",
+      "Work": "#D8B6A1",
+      "Sleep/Rest": "#FFF3C5",
+      "Eating/Food Prep": "#D2F1C3",
+      "Health/Fitness": "#C2DCFF",
+      "Self-Improvement": "#FF9999",
+      "Hobbies": "#C1FF72",
+      "Service/Charity": "#FFDE59",
+      "Spirituality": "#FF914D",
+      "Self-Care": "#74A45A",
+      "Other 1": "#6DB4FF",
+      "Other 2": "#997CAB"
+    };
 
-  // Register plugin (chartjs-plugin-datalabels.js must be loaded)
-  if (typeof ChartDataLabels !== "undefined") {
-    Chart.register(ChartDataLabels);
-  } else {
-    console.warn("ChartDataLabels plugin not found. % labels will not render.");
-  }
+    // ---- Read + transform data (hide zeros + sort desc) ----
+    const rawItems = [
+      { label: "Family", key: "family" },
+      { label: "Friends", key: "friends" },
+      { label: "Work", key: "work" },
+      { label: "Sleep/Rest", key: "sleep" },
+      { label: "Eating/Food Prep", key: "eating" },
+      { label: "Health/Fitness", key: "health" },
+      { label: "Self-Improvement", key: "self_improvement" },
+      { label: "Hobbies", key: "hobbies" },
+      { label: "Service/Charity", key: "service" },
+      { label: "Spirituality", key: "spirituality" },
+      { label: "Self-Care", key: "self_care" },
+      { label: "Other 1", key: "other1" },
+      { label: "Other 2", key: "other2" }
+    ];
 
-  const chart = new Chart(ctx, {
-    type: "pie",
-    data: {
-      labels: labels,
-      datasets: [{
-        data: dataValues,
-        backgroundColor: backgroundColors,
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "top",
-          labels: {
-            boxWidth: 14,
-            padding: 10,
-            generateLabels: (chart) => {
-              const data = chart.data;
-              const dataset = data.datasets[0];
-              const values = dataset.data || [];
-              const total = values.reduce((a, b) => a + Number(b || 0), 0);
+    const items = rawItems
+      .map(it => ({ label: it.label, value: getParamNumber(it.key) }))
+      .filter(it => it.value > 0)               // hide zeros
+      .sort((a, b) => b.value - a.value);       // sort largest -> smallest
 
-              return data.labels.map((label, i) => {
-                const v = Number(values[i] || 0);
-                const pct = total ? (v / total) * 100 : 0;
+    const labels = items.map(it => it.label);
+    const dataValues = items.map(it => it.value);
+    const backgroundColors = labels.map(l => COLOR_MAP[l] || "#999999");
+    const total = dataValues.reduce((a, b) => a + b, 0);
 
-                return {
-                  text: `${label} (${pct.toFixed(1)}%)`,
-                  fillStyle: Array.isArray(dataset.backgroundColor)
-                    ? dataset.backgroundColor[i]
-                    : dataset.backgroundColor,
-                  strokeStyle: "#fff",
-                  lineWidth: 1,
-                  hidden: chart.getDataVisibility(i) === false,
-                  index: i
-                };
-              });
+    // ---- No data handling (fail loudly, not silently) ----
+    const chartArea = document.getElementById("chartArea");
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    if (!total) {
+      if (chartArea) {
+        chartArea.innerHTML =
+          "<div style='padding:18px;color:#666;line-height:1.4;'>" +
+          "No data received.<br/>" +
+          "Open this page from the PDF button so values are included in the link." +
+          "</div>";
+      }
+      if (downloadBtn) downloadBtn.disabled = true;
+      throw new Error("No data received (total = 0). Check URL parameters.");
+    }
+
+    // ---- Chart rendering ----
+    const canvasEl = document.getElementById("chartCanvas");
+    const ctx = canvasEl.getContext("2d");
+
+    // Register plugin (chartjs-plugin-datalabels.js must be loaded)
+    if (typeof ChartDataLabels !== "undefined") {
+      Chart.register(ChartDataLabels);
+    } else {
+      console.warn("ChartDataLabels plugin not found. % labels will not render.");
+    }
+
+    const chart = new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: labels,
+        datasets: [{
+          data: dataValues,
+          backgroundColor: backgroundColors,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "top",
+            labels: {
+              boxWidth: 14,
+              padding: 10,
+              generateLabels: (c) => {
+                const data = c.data;
+                const dataset = data.datasets[0];
+                const values = dataset.data || [];
+                const t = values.reduce((a, b) => a + Number(b || 0), 0);
+
+                return data.labels.map((label, i) => {
+                  const v = Number(values[i] || 0);
+                  const pct = t ? (v / t) * 100 : 0;
+
+                  return {
+                    text: `${label} (${pct.toFixed(1)}%)`,
+                    fillStyle: Array.isArray(dataset.backgroundColor)
+                      ? dataset.backgroundColor[i]
+                      : dataset.backgroundColor,
+                    strokeStyle: "#fff",
+                    lineWidth: 1,
+                    hidden: c.getDataVisibility(i) === false,
+                    index: i
+                  };
+                });
+              }
+            }
+          },
+          datalabels: {
+            formatter: (value) => {
+              const pct = (value / total) * 100;
+              if (pct < 4) return "";          // prevents overlap
+              return pct.toFixed(1) + "%";
+            },
+            color: "#222",
+            font: { weight: "bold", size: 14 },
+            textStrokeColor: "#fff",
+            textStrokeWidth: 2,
+            anchor: "center",
+            align: "center",
+            offset: 6,
+            clamp: true
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const label = context.label || "";
+                const v = Number(context.raw || 0);
+                const values = context.dataset.data || [];
+                const t = values.reduce((a, b) => a + Number(b || 0), 0);
+                const pct = t ? (v / t) * 100 : 0;
+                return `${label}: ${v.toFixed(1)} (${pct.toFixed(1)}%)`;
+              }
             }
           }
-        },
-    datalabels: {
-      formatter: (value) => {
-        const pct = (value / total) * 100;
-        if (pct < 4) return "";
-        return pct.toFixed(1) + "%";
-      },
-      color: "#222",
-      font: { weight: "bold", size: 14 },
-      textStrokeColor: "#fff",
-      textStrokeWidth: 2,
-      anchor: "center",
-      align: "center",
-      offset: 6,
-      clamp: true
-    },
-    tooltip: {
-      callbacks: {
-        label: (context) => {
-          const label = context.label || "";
-          const v = Number(context.raw || 0);
-          const values = context.dataset.data || [];
-          const t = values.reduce((a, b) => a + Number(b || 0), 0);
-          const pct = t ? (v / t) * 100 : 0;
-          return `${label}: ${v.toFixed(1)} (${pct.toFixed(1)}%)`;
         }
       }
-    }
-  }
-}
-
-  // ---- Download button (Blob download + Safari fallback) ----
-  if (downloadBtn) {
-    downloadBtn.addEventListener("click", () => {
-      const filename = "life-balance-chart.png";
-      const canvas = chart.canvas;
-
-      if (canvas.toBlob) {
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            const dataUrl = canvas.toDataURL("image/png");
-            window.open(dataUrl, "_blank");
-            return;
-          }
-
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
-        }, "image/png");
-      } else {
-        const dataUrl = canvas.toDataURL("image/png");
-        window.open(dataUrl, "_blank");
-      }
     });
-  }
-</script>
+
+    // ---- Download button (Blob download + Safari fallback) ----
+    if (downloadBtn) {
+      downloadBtn.addEventListener("click", () => {
+        const filename = "life-balance-chart.png";
+        const canvas = chart.canvas;
+
+        if (canvas.toBlob) {
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              const dataUrl = canvas.toDataURL("image/png");
+              window.open(dataUrl, "_blank");
+              return;
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+          }, "image/png");
+        } else {
+          const dataUrl = canvas.toDataURL("image/png");
+          window.open(dataUrl, "_blank");
+        }
+      });
+    }
+  </script>
 
 </body>
 </html>

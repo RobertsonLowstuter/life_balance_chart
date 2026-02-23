@@ -9,12 +9,11 @@
 
   <h2>Life Balance Pie Chart</h2>
 
-  <div style="
-  width: 420px;
-  height: 420px;
+ <div style="
+  width: 520px;
   margin: 0 auto;
   background: white;
-  padding: 20px;
+  padding: 18px 18px 22px 18px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 ">
@@ -24,12 +23,15 @@
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   ">
     Download Chart (PNG)
   </button>
 
-  <canvas id="chartCanvas"></canvas>
+  <!-- THIS div is the fixed chart area -->
+  <div id="chartArea" style="height: 340px;">
+    <canvas id="chartCanvas"></canvas>
+  </div>
 
 </div>
 

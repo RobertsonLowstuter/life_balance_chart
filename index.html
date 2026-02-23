@@ -38,113 +38,162 @@
   <!-- chart script stays exactly as-is below -->
 
 <script>
-function getParam(name) {
-  const urlParams = new URLSearchParams(window.location.search);
-  return parseFloat(urlParams.get(name)) || 0;
-}
+  // ---- Helpers ----
+  function getParamNumber(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const raw = urlParams.get(name);
 
-const labels = [
-  "Family",
-  "Friends",
-  "Work",
-  "Sleep/Rest",
-  "Eating/Food Prep",
-  "Health/Fitness",
-  "Self-Improvement",
-  "Hobbies",
-  "Service/Charity",
-  "Spirituality",
-  "Self-Care",
-  "Other 1",
-  "Other 2"
-];
+    if (raw === null || raw === undefined) return 0;
 
-const dataValues = [
-  getParam("family"),
-  getParam("friends"),
-  getParam("work"),
-  getParam("sleep"),
-  getParam("eating"),
-  getParam("health"),
-  getParam("self_improvement"),
-  getParam("hobbies"),
-  getParam("service"),
-  getParam("spirituality"),
-  getParam("self_care"),
-  getParam("other1"),
-  getParam("other2")
-];
+    // tolerate values like "12.5%" or " 12.5 "
+    const cleaned = ("" + raw).replace("%", "").trim();
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? 0 : n;
+  }
 
-const ctx = document.getElementById("chartCanvas").getContext("2d");
+  // ---- Fixed category -> color mapping (unique colors) ----
+  const COLOR_MAP = {
+    "Family": "#4E79A7",
+    "Friends": "#59A14F",
+    "Work": "#F28E2B",
+    "Sleep/Rest": "#B07AA1",
+    "Eating/Food Prep": "#9C755F",
+    "Health/Fitness": "#E15759",
+    "Self-Improvement": "#76B7B2",
+    "Hobbies": "#EDC948",
+    "Service/Charity": "#FF9DA7",
+    "Spirituality": "#AF7AA1",
+    "Self-Care": "#BAB0AC",
+    "Other 1": "#86BCB6",
+    "Other 2": "#D37295"
+  };
 
-const chart = new Chart(ctx, {
-  type: "pie",
-  data: {
-    labels: labels,
-    datasets: [{
-      data: dataValues
-    }]
-  },
-  options: {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: "top",
-      labels: {
-        boxWidth: 14,
-        padding: 10
-      }
+  // ---- Read + transform data (hide zeros + sort desc) ----
+  const rawItems = [
+    { label: "Family", key: "family" },
+    { label: "Friends", key: "friends" },
+    { label: "Work", key: "work" },
+    { label: "Sleep/Rest", key: "sleep" },
+    { label: "Eating/Food Prep", key: "eating" },
+    { label: "Health/Fitness", key: "health" },
+    { label: "Self-Improvement", key: "self_improvement" },
+    { label: "Hobbies", key: "hobbies" },
+    { label: "Service/Charity", key: "service" },
+    { label: "Spirituality", key: "spirituality" },
+    { label: "Self-Care", key: "self_care" },
+    { label: "Other 1", key: "other1" },
+    { label: "Other 2", key: "other2" }
+  ];
+
+  const items = rawItems
+    .map(it => ({ label: it.label, value: getParamNumber(it.key) }))
+    .filter(it => it.value > 0)               // hide zeros
+    .sort((a, b) => b.value - a.value);       // sort largest -> smallest
+
+  const labels = items.map(it => it.label);
+  const dataValues = items.map(it => it.value);
+  const backgroundColors = labels.map(l => COLOR_MAP[l] || "#999999");
+  const total = dataValues.reduce((a, b) => a + b, 0);
+
+  // ---- No data handling (fail loudly, not silently) ----
+  const chartArea = document.getElementById("chartArea");
+  const downloadBtn = document.getElementById("downloadBtn");
+
+  if (!total) {
+    if (chartArea) {
+      chartArea.innerHTML =
+        "<div style='padding:18px;color:#666;line-height:1.4;'>" +
+        "No data received.<br/>" +
+        "Open this page from the PDF button so values are included in the link." +
+        "</div>";
+    }
+    if (downloadBtn) downloadBtn.disabled = true;
+    // Stop here — don’t try to render a chart
+    throw new Error("No data received (total = 0). Check URL parameters.");
+  }
+
+  // ---- Chart rendering ----
+  const canvasEl = document.getElementById("chartCanvas");
+  const ctx = canvasEl.getContext("2d");
+
+  // Register plugin (chartjs-plugin-datalabels.js must be loaded)
+  if (typeof ChartDataLabels !== "undefined") {
+    Chart.register(ChartDataLabels);
+  } else {
+    console.warn("ChartDataLabels plugin not found. % labels will not render.");
+  }
+
+  const chart = new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels: labels,
+      datasets: [{
+        data: dataValues,
+        backgroundColor: backgroundColors,
+        borderWidth: 1
+      }]
     },
-    datalabels: {
-      formatter: (value) => {
-        if (!total) return "";
-        const pct = (value / total) * 100;
-        return pct.toFixed(1) + "%";
-      },
-      anchor: "center",
-      align: "center"
-    },
-    tooltip: {
-      callbacks: {
-        label: (context) => {
-          const v = context.raw || 0;
-          const pct = total ? (v / total) * 100 : 0;
-          return `${context.label}: ${v} (${pct.toFixed(1)}%)`;
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "top",
+          labels: {
+            boxWidth: 14,
+            padding: 10
+          }
+        },
+        datalabels: {
+          formatter: (value) => {
+            const pct = (value / total) * 100;
+            return pct.toFixed(1) + "%";
+          },
+          anchor: "center",
+          align: "center"
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const v = context.raw || 0;
+              const pct = (v / total) * 100;
+              return `${context.label}: ${v} (${pct.toFixed(1)}%)`;
+            }
+          }
         }
       }
     }
-  }
-}
-});
-document.getElementById("downloadBtn").addEventListener("click", () => {
-  const filename = "life-balance-chart.png";
-  const canvas = chart.canvas;
+  });
 
-  // Best method: Blob download (Chrome/Edge/Firefox)
-  if (canvas.toBlob) {
-    canvas.toBlob((blob) => {
-      if (!blob) {
+  // ---- Download button (Blob download + Safari fallback) ----
+  if (downloadBtn) {
+    downloadBtn.addEventListener("click", () => {
+      const filename = "life-balance-chart.png";
+      const canvas = chart.canvas;
+
+      if (canvas.toBlob) {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            const dataUrl = canvas.toDataURL("image/png");
+            window.open(dataUrl, "_blank");
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        }, "image/png");
+      } else {
         const dataUrl = canvas.toDataURL("image/png");
         window.open(dataUrl, "_blank");
-        return;
       }
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }, "image/png");
-  } else {
-    // Fallback: open in a new tab (Safari-friendly)
-    const dataUrl = canvas.toDataURL("image/png");
-    window.open(dataUrl, "_blank");
+    });
   }
-});
 </script>
 
 </body>

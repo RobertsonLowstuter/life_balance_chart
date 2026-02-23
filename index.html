@@ -146,57 +146,55 @@
               const data = chart.data;
               const dataset = data.datasets[0];
               const values = dataset.data || [];
-              const total = values.reduce((a, b) => a + b, 0);
+              const total = values.reduce((a, b) => a + Number(b || 0), 0);
 
               return data.labels.map((label, i) => {
-              const v = Number(values[i] || 0);
-              const pct = total ? (v / total) * 100 : 0;
+                const v = Number(values[i] || 0);
+                const pct = total ? (v / total) * 100 : 0;
 
-              return {
-                text: `${label} (${pct.toFixed(1)}%)`,
-                fillStyle: dataset.backgroundColor[i],
-                strokeStyle: "#fff",
-                lineWidth: 1,
-                hidden: chart.getDataVisibility(i) === false,
-                index: i
-              };
-            });
+                return {
+                  text: `${label} (${pct.toFixed(1)}%)`,
+                  fillStyle: Array.isArray(dataset.backgroundColor)
+                    ? dataset.backgroundColor[i]
+                    : dataset.backgroundColor,
+                  strokeStyle: "#fff",
+                  lineWidth: 1,
+                  hidden: chart.getDataVisibility(i) === false,
+                  index: i
+                };
+              });
+            }
           }
-        }
-      },
-      datalabels: {
-        formatter: (value) => {
-          const pct = (value / total) * 100;
-          if (pct < 4) return "";   // keep overlap prevention
-          return pct.toFixed(1) + "%";
         },
-        color: "#222",              // dark text for contrast
-        font: {
-        weight: "bold",
-        size: 14                  // increase size (try 13–15)
-        },
-        textStrokeColor: "#fff",    // subtle white outline
-        textStrokeWidth: 2,
-        anchor: "center",
-        align: "center",
-        offset: 6,                  // nudges labels outward
-        clamp: true
+    datalabels: {
+      formatter: (value) => {
+        const pct = (value / total) * 100;
+        if (pct < 4) return "";
+        return pct.toFixed(1) + "%";
       },
-      tooltip: {
-        callbacks: {
-          label: (context) => {
-            const label = context.label || "";
-            const v = Number(context.raw || 0);
-            const values = context.dataset.data || [];
-            const total = values.reduce((a, b) => a + Number(b || 0), 0);
-            const pct = total ? (v / total) * 100 : 0;
-
-            // v formatted to 1 decimal, pct to 1 decimal
-            return `${label}: ${v.toFixed(1)} (${pct.toFixed(1)}%)`;
-          }
+      color: "#222",
+      font: { weight: "bold", size: 14 },
+      textStrokeColor: "#fff",
+      textStrokeWidth: 2,
+      anchor: "center",
+      align: "center",
+      offset: 6,
+      clamp: true
+    },
+    tooltip: {
+      callbacks: {
+        label: (context) => {
+          const label = context.label || "";
+          const v = Number(context.raw || 0);
+          const values = context.dataset.data || [];
+          const t = values.reduce((a, b) => a + Number(b || 0), 0);
+          const pct = t ? (v / t) * 100 : 0;
+          return `${label}: ${v.toFixed(1)} (${pct.toFixed(1)}%)`;
         }
-      },
-    });
+      }
+    }
+  }
+}
 
   // ---- Download button (Blob download + Safari fallback) ----
   if (downloadBtn) {

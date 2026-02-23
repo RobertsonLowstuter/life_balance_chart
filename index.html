@@ -10,7 +10,7 @@
   <h2>Life Balance Pie Chart</h2>
 
  <div style="
-  width: 520px;
+  width: 640px;
   margin: 0 auto;
   background: white;
   padding: 18px 18px 22px 18px;
@@ -29,7 +29,7 @@
   </button>
 
   <!-- THIS div is the fixed chart area -->
-  <div id="chartArea" style="height: 340px;">
+  <div id="chartArea" style="height: 460px;">
     <canvas id="chartCanvas"></canvas>
   </div>
 
@@ -53,19 +53,19 @@
 
   // ---- Fixed category -> color mapping (unique colors) ----
   const COLOR_MAP = {
-    "Family": "#4E79A7",
-    "Friends": "#59A14F",
-    "Work": "#F28E2B",
-    "Sleep/Rest": "#B07AA1",
-    "Eating/Food Prep": "#9C755F",
-    "Health/Fitness": "#E15759",
-    "Self-Improvement": "#76B7B2",
-    "Hobbies": "#EDC948",
-    "Service/Charity": "#FF9DA7",
-    "Spirituality": "#AF7AA1",
-    "Self-Care": "#BAB0AC",
-    "Other 1": "#86BCB6",
-    "Other 2": "#D37295"
+    "Family": "#1F77B4",
+    "Friends": "#2CA02C",
+    "Work": "#FF7F0E",
+    "Sleep/Rest": "#9467BD",
+    "Eating/Food Prep": "#8C564B",
+    "Health/Fitness": "#D62728",
+    "Self-Improvement": "#17BECF",
+    "Hobbies": "#BCBD22",
+    "Service/Charity": "#E377C2",
+    "Spirituality": "#7F7F7F",
+    "Self-Care": "#AEC7E8",
+    "Other 1": "#98DF8A",
+    "Other 2": "#FFBB78"
   };
 
   // ---- Read + transform data (hide zeros + sort desc) ----
@@ -143,26 +143,28 @@
             boxWidth: 14,
             padding: 10
           }
-        },
-        datalabels: {
-          formatter: (value) => {
-            const pct = (value / total) * 100;
-            return pct.toFixed(1) + "%";
-          },
-          anchor: "center",
-          align: "center"
-        },
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              const v = context.raw || 0;
-              const pct = (v / total) * 100;
-              return `${context.label}: ${v} (${pct.toFixed(1)}%)`;
-            }
-          }
+    },
+    datalabels: {
+      formatter: (value) => {
+        const pct = (value / total) * 100;
+        if (pct < 4) return "";
+        return pct.toFixed(1) + "%";
+      },
+      anchor: "center",
+      align: "center",
+      clamp: true
+    },
+    tooltip: {
+      callbacks: {
+        label: (context) => {
+          const v = context.raw || 0;
+          const pct = (v / total) * 100;
+          return `${context.label}: ${v} (${pct.toFixed(1)}%)`;
         }
       }
     }
+  }
+}
   });
 
   // ---- Download button (Blob download + Safari fallback) ----

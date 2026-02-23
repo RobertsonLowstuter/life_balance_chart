@@ -86,9 +86,36 @@ new Chart(ctx, {
     }]
   },
   options: {
-    responsive: true,
-    maintainAspectRatio: false
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: "top",
+      labels: {
+        boxWidth: 14,
+        padding: 10
+      }
+    },
+    datalabels: {
+      formatter: (value) => {
+        if (!total) return "";
+        const pct = (value / total) * 100;
+        return pct.toFixed(1) + "%";
+      },
+      anchor: "center",
+      align: "center"
+    },
+    tooltip: {
+      callbacks: {
+        label: (context) => {
+          const v = context.raw || 0;
+          const pct = total ? (v / total) * 100 : 0;
+          return `${context.label}: ${v} (${pct.toFixed(1)}%)`;
+        }
+      }
+    }
   }
+}
 });
 </script>
 

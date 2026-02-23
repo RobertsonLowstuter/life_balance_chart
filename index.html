@@ -3,22 +3,35 @@
 <head>
   <title>Life Balance Pie Chart</title>
   <script src="chart.js"></script>
+  <script src="chartjs-plugin-datalabels.js"></script>
 </head>
 <body style="font-family: Arial; text-align: center; padding: 30px; background:#f7f7f7;">
 
   <h2>Life Balance Pie Chart</h2>
 
   <div style="
-    width: 420px;
-    height: 420px;
-    margin: 0 auto;
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  width: 420px;
+  height: 420px;
+  margin: 0 auto;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+">
+
+  <button id="downloadBtn" style="
+    padding: 10px 14px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-bottom: 14px;
   ">
-    <canvas id="chartCanvas"></canvas>
-  </div>
+    Download Chart (PNG)
+  </button>
+
+  <canvas id="chartCanvas"></canvas>
+
+</div>
 
   <!-- chart script stays exactly as-is below -->
 

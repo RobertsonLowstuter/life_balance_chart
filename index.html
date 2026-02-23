@@ -147,11 +147,19 @@
     datalabels: {
       formatter: (value) => {
         const pct = (value / total) * 100;
-        if (pct < 4) return "";
+        if (pct < 4) return "";   // keep overlap prevention
         return pct.toFixed(1) + "%";
       },
+      color: "#222",              // dark text for contrast
+      font: {
+        weight: "bold",
+        size: 14                  // increase size (try 13–15)
+      },
+      textStrokeColor: "#fff",    // subtle white outline
+      textStrokeWidth: 2,
       anchor: "center",
       align: "center",
+      offset: 6,                  // nudges labels outward
       clamp: true
     },
     tooltip: {

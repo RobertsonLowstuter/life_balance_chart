@@ -61,7 +61,7 @@
     button.primary{ background:#111; color:#fff; }
     button:disabled{ opacity:.5; cursor:not-allowed; }
 
-    .chartBox{ height: 440px; }
+    .chartBox{ height: 460px; }
     .legendNote{ margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.4; }
     .small{ font-size:12px; color: var(--muted); }
 
@@ -111,13 +111,14 @@
       </div>
 
       <div class="legendNote">
-        Notes: Auto-save works on the same device/browser. If total hours exceed 168, we’ll flag it.
+        Notes: Auto-save works on the same device/browser.
+        The pie chart includes a <b>Remaining</b> slice so pie % matches “% of week.”
       </div>
     </div>
 
     <div class="card">
       <h1>Pie Chart</h1>
-      <p class="sub">Only categories with > 0 hours are shown. Tiny slices hide labels to prevent overlap.</p>
+      <p class="sub">Distribution of your 168-hour week. Tiny slices hide labels to prevent overlap.</p>
       <div class="chartBox">
         <canvas id="chartCanvas"></canvas>
       </div>
@@ -128,22 +129,22 @@
 <script>
 (() => {
   const WEEK = 168;
-  const LS_KEY = "life_balance_hours_v2"; // bump key so you don't inherit old data bugs
+  const LS_KEY = "life_balance_hours_v3";
 
   const CATEGORIES = [
-    { label: "Family", key: "family", color: "#CEA8F0" },
-    { label: "Friends", key: "friends", color: "#FFC2E8" },
-    { label: "Work", key: "work", color: "#D8B6A1" },
-    { label: "Sleep/Rest", key: "sleep", color: "#FFF3C5" },
-    { label: "Eating/Food Prep", key: "eating", color: "#D2F1C3" },
-    { label: "Health/Fitness", key: "health", color: "#C2DCFF" },
-    { label: "Self-Improvement", key: "self_improvement", color: "#FF9999" },
-    { label: "Hobbies", key: "hobbies", color: "#C1FF72" },
-    { label: "Service/Charity", key: "service", color: "#FFDE59" },
-    { label: "Spirituality", key: "spirituality", color: "#FF914D" },
-    { label: "Self-Care", key: "self_care", color: "#74A45A" },
-    { label: "Other 1", key: "other1", color: "#6DB4FF" },
-    { label: "Other 2", key: "other2", color: "#997CAB" }
+    { label: "Family",            key: "family",           color: "#CEA8F0" },
+    { label: "Friends",           key: "friends",          color: "#FFC2E8" },
+    { label: "Work",              key: "work",             color: "#D8B6A1" },
+    { label: "Sleep/Rest",        key: "sleep",            color: "#FFF3C5" },
+    { label: "Eating/Food Prep",  key: "eating",           color: "#D2F1C3" },
+    { label: "Health/Fitness",    key: "health",           color: "#C2DCFF" },
+    { label: "Self-Improvement",  key: "self_improvement", color: "#FF9999" },
+    { label: "Hobbies",           key: "hobbies",          color: "#C1FF72" },
+    { label: "Service/Charity",   key: "service",          color: "#FFDE59" },
+    { label: "Spirituality",      key: "spirituality",     color: "#FF914D" },
+    { label: "Self-Care",         key: "self_care",        color: "#74A45A" },
+    { label: "Other 1",           key: "other1",           color: "#6DB4FF" },
+    { label: "Other 2",           key: "other2",           color: "#997CAB" }
   ];
 
   const rowsEl = document.getElementById("rows");
@@ -157,13 +158,16 @@
   const printBtn = document.getElementById("printBtn");
   const clearBtn = document.getElementById("clearBtn");
 
-  function clampNum(n){
+  function clampNonNeg(n){
     if (!isFinite(n)) return 0;
-    if (n < 0) return 0;
-    return n;
+    return n < 0 ? 0 : n;
   }
-  function fmtPct(x){ return (x * 100).toFixed(1) + "%"; }
-  function fmtNum(x){ return (Math.round(x * 10) / 10).toString(); }
+  function fmtPctOfWeek(hours){
+    return ((hours / WEEK) * 100).toFixed(1) + "%";
+  }
+  function fmtNum(x){
+    return (Math.round(x * 10) / 10).toString();
+  }
 
   function loadState(){
     try{
@@ -215,7 +219,7 @@
     const out = {};
     for (const c of CATEGORIES){
       const el = document.getElementById("hours_" + c.key);
-      const v = clampNum(parseFloat(el.value));
+      const v = clampNonNeg(parseFloat(el.value));
       if (v > 0) out[c.key] = v;
     }
     return out;
@@ -224,29 +228,36 @@
   let chart;
 
   function initChart(){
-    const ctx = document.getElementById("chartCanvas").getContext("2d");
+    const canvas = document.getElementById("chartCanvas");
+    const ctx = canvas.getContext("2d");
 
-    // Register DataLabels plugin
     if (typeof ChartDataLabels !== "undefined") {
       Chart.register(ChartDataLabels);
     }
 
     chart = new Chart(ctx, {
       type: "pie",
-      data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 1 }] },
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          backgroundColor: [],
+          borderWidth: 1
+        }]
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: "top", labels: { boxWidth: 14, padding: 10 } },
+          legend: {
+            position: "top",
+            labels: { boxWidth: 14, padding: 10 }
+          },
 
-          // % labels in slices
+          // % labels inside slices (ALWAYS % of 168)
           datalabels: {
-            formatter: (value, context) => {
-              const data = context.chart.data.datasets[0].data || [];
-              const total = data.reduce((a, b) => a + Number(b || 0), 0);
-              if (!total) return "";
-              const pct = (value / total) * 100;
+            formatter: (value) => {
+              const pct = (Number(value || 0) / WEEK) * 100;
               // hide tiny labels to prevent overlap
               if (pct < 4) return "";
               return pct.toFixed(1) + "%";
@@ -260,14 +271,13 @@
             clamp: true
           },
 
+          // Tooltip shows hours + % of week (clean, consistent)
           tooltip: {
             callbacks: {
               label: (context) => {
                 const label = context.label || "";
                 const v = Number(context.raw || 0);
-                const vals = context.dataset.data || [];
-                const t = vals.reduce((a,b)=>a+(Number(b)||0), 0);
-                const pct = t ? (v / t) * 100 : 0;
+                const pct = (v / WEEK) * 100;
                 return `${label}: ${v.toFixed(1)} hrs (${pct.toFixed(1)}%)`;
               }
             }
@@ -281,36 +291,44 @@
     const state = getHoursState();
     saveState(state);
 
-    const used = Object.values(state).reduce((a,b)=>a+b, 0);
+    const used = Object.values(state).reduce((a,b) => a + Number(b || 0), 0);
     const remaining = WEEK - used;
 
     totalUsedEl.textContent = fmtNum(used);
     totalRemainingEl.textContent = fmtNum(remaining);
 
-    pctUsedEl.textContent = fmtPct(used / WEEK);
-    pctRemainingEl.textContent = fmtPct((WEEK - used) / WEEK);
+    pctUsedEl.textContent = ((used / WEEK) * 100).toFixed(1) + "%";
+    pctRemainingEl.textContent = ((remaining / WEEK) * 100).toFixed(1) + "%";
 
+    // Table row % values (always % of week)
     for (const c of CATEGORIES){
-      const v = state[c.key] || 0;
-      document.getElementById("pct_" + c.key).textContent = fmtPct(v / WEEK);
+      const v = Number(state[c.key] || 0);
+      document.getElementById("pct_" + c.key).textContent = fmtPctOfWeek(v);
     }
 
+    // Status message
     if (used > WEEK){
       statusEl.className = "status bad";
-      statusEl.textContent = `Total exceeds ${WEEK} hours by ${(used - WEEK).toFixed(1)}. Adjust inputs.`;
+      statusEl.textContent = `Total exceeds ${WEEK} hours by ${(used - WEEK).toFixed(1)}. Reduce inputs.`;
     } else {
       statusEl.className = "status ok";
       statusEl.textContent = `You have ${(WEEK - used).toFixed(1)} hours remaining.`;
     }
 
+    // Chart items: show non-zero categories, sorted desc
     const items = CATEGORIES
-      .map(c => ({ label: c.label, value: state[c.key] || 0, color: c.color }))
+      .map(c => ({ label: c.label, value: Number(state[c.key] || 0), color: c.color }))
       .filter(x => x.value > 0)
       .sort((a,b)=>b.value-a.value);
 
-    chart.data.labels = items.map(x=>x.label);
-    chart.data.datasets[0].data = items.map(x=>x.value);
-    chart.data.datasets[0].backgroundColor = items.map(x=>x.color);
+    // Add remaining slice so chart represents the full 168-hour week
+    if (remaining > 0){
+      items.push({ label: "Remaining", value: remaining, color: "#E6E6E6" });
+    }
+
+    chart.data.labels = items.map(x => x.label);
+    chart.data.datasets[0].data = items.map(x => x.value);
+    chart.data.datasets[0].backgroundColor = items.map(x => x.color);
     chart.update();
   }
 
@@ -327,6 +345,7 @@
   downloadPngBtn.addEventListener("click", () => {
     const canvas = chart.canvas;
     const filename = "life-balance-chart.png";
+
     if (canvas.toBlob){
       canvas.toBlob((blob) => {
         if (!blob) return;
@@ -355,7 +374,7 @@
     updateUI();
   });
 
-  // boot
+  // Boot
   const state = loadState();
   buildTable(state);
   initChart();

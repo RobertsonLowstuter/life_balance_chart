@@ -19,8 +19,9 @@
       --ok:#147a3a;
 
       /* Brand */
-      --brand:#28456A;
+      --brand:#28456A;              /* used for headings */
       --brand-muted:#5E6F86;
+      --brand-header-bg:#7A1F22;    /* deep maroon header background */
     }
 
     *{ box-sizing:border-box; }
@@ -38,45 +39,64 @@
       display:flex;
       justify-content: space-between;
       align-items: stretch;
-      border-top: 4px solid var(--brand);
-      border-bottom: 4px solid var(--brand);
+      background: var(--brand-header-bg);
       margin: 6px auto 18px auto;
       max-width: 1100px;
-      background: #fff;
+      border-radius: 0;
     }
+
     .brand-left{
       display:flex;
       align-items:center;
       gap: 14px;
       padding: 14px 18px;
     }
+
     .brand-logo{
-      font-family: Calibri, "Segoe UI", serif;
-      font-size: 42px;
-      font-weight: 300;
-      color: var(--brand);
-      border-right: 3px solid var(--brand);
-      padding-right: 14px;
+      font-family: "Times New Roman", Georgia, "Libre Baskerville", serif;
+      font-size: 46px;
+      font-weight: 400;
+      color: #ffffff;
+      border-right: 2px solid rgba(255,255,255,0.85);
+      padding-right: 16px;
       line-height: 1;
-      letter-spacing: 1px;
-    }
-    .brand-name{
-      font-size: 24px;
       letter-spacing: 2px;
-      color: var(--brand);
-      text-transform: uppercase;
+      white-space: nowrap;
     }
-    .brand-right{
-      background: var(--brand);
-      color:#fff;
-      font-weight: 700;
-      padding: 0 24px;
-      display:flex;
-      align-items:center;
-      letter-spacing: 1px;
-      font-size: 14px;
+
+    .brand-name{
+      font-family: "Times New Roman", Georgia, "Libre Baskerville", serif;
+      font-size: 22px;
+      letter-spacing: 3px;
+      color: #ffffff;
       text-transform: uppercase;
       white-space: nowrap;
+    }
+
+    .brand-right{
+      background: rgba(0,0,0,0.15);
+      color:#ffffff;
+      padding: 0 26px;
+      display:flex;
+      align-items:center;
+      font-size: 18px;
+      font-style: italic;
+      font-weight: 500;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 980px){
+      .brand-right{ display:none; } /* keep header clean on narrow screens */
+      .brand-name{ font-size: 18px; letter-spacing: 1px; }
+      .brand-logo{ font-size: 38px; }
+    }
+
+    @media (max-width: 900px){
+      .brand-right{
+        font-size: 15px;
+        padding: 0 18px;
+      }
     }
 
     /* ===== Layout ===== */
@@ -89,9 +109,6 @@
     }
     @media (max-width: 980px){
       .wrap{ grid-template-columns: 1fr; }
-      .brand-right{ display:none; } /* keep header clean on narrow screens */
-      .brand-name{ font-size: 18px; letter-spacing: 1px; }
-      .brand-logo{ font-size: 36px; }
     }
 
     .card{
@@ -193,6 +210,7 @@
       .wrap { grid-template-columns: 1fr; }
       .chartBox { height: 520px; }
       .brand-header{ margin-bottom: 24px; }
+      .brand-right{ display:flex !important; } /* show tagline on print */
     }
   </style>
 </head>
@@ -204,7 +222,9 @@
       <span class="brand-logo">RL</span>
       <span class="brand-name">Robertson Lowstuter</span>
     </div>
-    <div class="brand-right">PERSONAL &amp; CONFIDENTIAL</div>
+    <div class="brand-right">
+      “Create Uncommon Results!®”
+    </div>
   </div>
 
   <div class="wrap">
@@ -260,7 +280,7 @@
 <script>
 (() => {
   const WEEK = 168;
-  const LS_KEY = "life_balance_hours_brand_v1";
+  const LS_KEY = "life_balance_hours_brand_tagline_v1";
 
   const CATEGORIES = [
     { label: "Family",            key: "family",           color: "#CEA8F0" },
@@ -506,9 +526,6 @@
   initChart();
   updateUI();
 })();
-</script>
-</body>
-</html>
 </script>
 </body>
 </html>

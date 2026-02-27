@@ -198,15 +198,71 @@
       line-height: 1.4;
     }
 
-    @media print{
-      body { background:#fff; padding:0; }
-      .btnrow, .legendNote { display:none !important; }
-      .card { box-shadow:none; }
-      .wrap { grid-template-columns: 1fr; }
-      .chartBox { height: 560px; }
-      .brand-header{ margin-bottom: 24px; }
-      .brand-right{ display:block !important; }
-      thead th{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    /* ===== PRINT: make the PDF look like a designed worksheet ===== */
+    @media print {
+      @page { margin: 12mm; }
+
+      body {
+        background: #fff !important;
+        padding: 0 !important;
+      }
+
+      /* Remove “website” shadows */
+      .card {
+        box-shadow: none !important;
+        border: 1px solid #e6e6e6 !important;
+        border-radius: 10px !important;
+        page-break-inside: avoid;
+      }
+
+      /* Print as a single column */
+      .wrap {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+        max-width: none !important;
+      }
+
+      /* Tighten header for print */
+      .brand-header {
+        max-width: none !important;
+        margin: 0 0 10mm 0 !important;
+        height: 70px !important;
+        padding: 0 12px !important;
+      }
+      .brand-logo-img { height: 52px !important; margin-left: 0 !important; }
+      .brand-right { font-size: 14px !important; }
+
+      /* Hide buttons + web-only notes */
+      .btnrow, .legendNote {
+        display: none !important;
+      }
+
+      /* Document-like typography */
+      h1 {
+        font-size: 18pt !important;
+        margin: 0 0 6pt 0 !important;
+      }
+      .sub {
+        font-size: 11pt !important;
+        margin: 0 0 10pt 0 !important;
+      }
+
+      /* Ensure the blue table header prints */
+      thead th {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      /* Chart sizing for print */
+      .chartBox {
+        height: 140mm !important;
+      }
+
+      /* Force chart card onto its own page */
+      .wrap > .card:nth-child(2) {
+        break-before: page;
+        page-break-before: always;
+      }
     }
   </style>
 </head>
@@ -290,7 +346,6 @@
     { label: "Spirituality",      key: "spirituality",     color: "#FF914D", labelEditable: false },
     { label: "Self-Care",         key: "self_care",        color: "#74A45A", labelEditable: false },
 
-    // Editable labels
     { label: "Other 1",           key: "other1",           color: "#6DB4FF", labelEditable: true },
     { label: "Other 2",           key: "other2",           color: "#997CAB", labelEditable: true }
   ];
@@ -336,17 +391,16 @@
     try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch{}
   }
 
+  let currentState = loadState();
+
   function getCustomLabel(key){
-    // Return the custom label input if present, else stored label, else default
     const input = document.getElementById("label_" + key);
     const typed = input ? input.value.trim() : "";
     if (typed) return typed;
 
-    // fallback: stored label from localStorage state
     const stored = currentState.labels[key];
     if (stored && ("" + stored).trim()) return ("" + stored).trim();
 
-    // fallback: default label from category
     const cat = CATEGORIES.find(c => c.key === key);
     return cat ? cat.label : key;
   }
@@ -362,7 +416,7 @@
       if (c.labelEditable){
         const lbl = document.createElement("input");
         lbl.type = "text";
-        lbl.id = "label_" + c.key; // label_other1 / label_other2
+        lbl.id = "label_" + c.key;
         lbl.className = "other-label";
         lbl.placeholder = c.label;
 
@@ -409,12 +463,10 @@
     const labels = {};
 
     for (const c of CATEGORIES){
-      // hours
       const hEl = document.getElementById("hours_" + c.key);
       const v = clampNonNeg(parseFloat(hEl.value));
       if (v > 0) hours[c.key] = v;
 
-      // labels (only for editable ones)
       if (c.labelEditable){
         const lEl = document.getElementById("label_" + c.key);
         const t = (lEl ? lEl.value.trim() : "");
@@ -426,7 +478,6 @@
   }
 
   let chart;
-  let currentState = loadState();
 
   function initChart(){
     const canvas = document.getElementById("chartCanvas");
@@ -450,7 +501,6 @@
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          // Legend on the RIGHT, includes percentages (relative to the pie total)
           legend: {
             display: true,
             position: "right",
@@ -481,7 +531,6 @@
             }
           },
 
-          // % INSIDE slices (based on 168-hour week)
           datalabels: {
             formatter: (value) => {
               const pct = (Number(value || 0) / WEEK) * 100;
@@ -538,7 +587,6 @@
       statusEl.textContent = `You have ${(WEEK - used).toFixed(1)} hours remaining.`;
     }
 
-    // If all zeros, show an empty chart
     if (used === 0){
       chart.data.labels = [];
       chart.data.datasets[0].data = [];
@@ -547,7 +595,6 @@
       return;
     }
 
-    // Build items (use custom labels for Other 1/2)
     const items = CATEGORIES
       .map(c => {
         const val = Number(currentState.hours[c.key] || 0);
@@ -557,7 +604,6 @@
       .filter(x => x.value > 0)
       .sort((a,b)=>b.value-a.value);
 
-    // Keep Remaining slice so chart % matches table (% of week)
     if (remaining > 0){
       items.push({ label: "Remaining", value: remaining, color: "#E6E6E6" });
     }
@@ -599,12 +645,15 @@
     }
   });
 
-  printBtn.addEventListener("click", () => window.print());
+  /* Print helper: ensures chart is drawn before print */
+  printBtn.addEventListener("click", () => {
+    chart.update();
+    setTimeout(() => window.print(), 80);
+  });
 
   clearBtn.addEventListener("click", () => {
     if (!confirm("Clear all hours and labels?")) return;
 
-    // Clear all UI inputs
     for (const c of CATEGORIES){
       const hEl = document.getElementById("hours_" + c.key);
       if (hEl) hEl.value = "";

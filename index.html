@@ -34,7 +34,7 @@
       padding: 22px;
     }
 
-    /* ===== Brand Header (tight, aligned) ===== */
+    /* ===== Brand Header ===== */
     .brand-header{
       display:flex;
       align-items:center;
@@ -42,7 +42,7 @@
       background: var(--brand-header-bg);
       max-width: 1240px;
       margin: 6px auto 18px auto;
-      height: 104px;           /* allows bigger logo */
+      height: 104px;              /* sized for large logo */
       padding: 0 18px;
       overflow: hidden;
     }
@@ -54,7 +54,7 @@
     }
 
     .brand-logo-img{
-      height: 82px;            /* bigger logo */
+      height: 82px;               /* large logo */
       width: auto;
       display:block;
       margin-left: 12px;
@@ -80,11 +80,11 @@
 
     /* ===== Layout ===== */
     .wrap{
-      max-width: 1240px;                 /* wider page to allow outside labels */
+      max-width: 1240px;
       margin:0 auto;
       display:grid;
       gap:16px;
-      grid-template-columns: 1.05fr 0.95fr; /* give chart more room */
+      grid-template-columns: 1.05fr 0.95fr;
     }
     @media (max-width: 1100px){
       .wrap{ grid-template-columns: 1fr; }
@@ -117,7 +117,7 @@
       vertical-align: middle;
     }
 
-    /* (2) Table header row: white text, brand blue background, larger */
+    /* Table header row: white text, brand blue background, larger */
     thead th{
       background: var(--brand);
       color: #fff;
@@ -127,9 +127,7 @@
       padding: 12px 10px;
     }
 
-    th{
-      text-align:left;
-    }
+    th{ text-align:left; }
     td:nth-child(2), td:nth-child(3),
     th:nth-child(2), th:nth-child(3){ text-align:right; }
 
@@ -169,7 +167,7 @@
 
     .btnrow{ display:flex; flex-wrap: wrap; gap:10px; margin-top: 12px; }
 
-    /* (3) Buttons: title case + brand blue */
+    /* Buttons: brand blue, title case labels already in HTML */
     button{
       border:none;
       border-radius: 12px;
@@ -183,7 +181,7 @@
     }
     button:disabled{ opacity:.5; cursor:not-allowed; }
 
-    .chartBox{ height: 520px; } /* more room for outside labels */
+    .chartBox{ height: 520px; }
 
     .legendNote{
       margin-top: 8px;
@@ -216,6 +214,7 @@
   </div>
 
   <div class="wrap">
+    <!-- Planner -->
     <div class="card">
       <h1>Life Balance Planner (168-hour week)</h1>
       <p class="sub">
@@ -254,10 +253,10 @@
       </div>
     </div>
 
+    <!-- Chart -->
     <div class="card">
-      <!-- (1) Title change -->
       <h1>Life Balance Pie Chart</h1>
-      <p class="sub">Labels are placed near slices. Tiny slices hide labels to prevent overlap.</p>
+      <p class="sub">Clean pie with % inside slices. Legend on the right matches slice colors.</p>
 
       <div class="chartBox">
         <canvas id="chartCanvas"></canvas>
@@ -268,7 +267,7 @@
 <script>
 (() => {
   const WEEK = 168;
-  const LS_KEY = "life_balance_hours_brand_v3";
+  const LS_KEY = "life_balance_hours_brand_v4";
 
   const CATEGORIES = [
     { label: "Family",            key: "family",           color: "#CEA8F0" },
@@ -387,32 +386,51 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-
-        /* (4) Turn OFF top legend; we will label slices directly */
         plugins: {
-          legend: { display: false },
+          /* Legend on the RIGHT, includes percentages (matches slice colors) */
+          legend: {
+            display: true,
+            position: "right",
+            labels: {
+              boxWidth: 14,
+              padding: 12,
+              font: { size: 12, weight: "600" },
+              generateLabels: (chart) => {
+                const data = chart.data;
+                const ds = data.datasets[0];
+                const values = ds.data || [];
+                const total = values.reduce((a, b) => a + Number(b || 0), 0);
 
-          /* Outside labels next to slices */
+                return data.labels.map((label, i) => {
+                  const v = Number(values[i] || 0);
+                  const pct = total ? (v / total) * 100 : 0;
+
+                  return {
+                    text: `${label} — ${pct.toFixed(1)}%`,
+                    fillStyle: Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : ds.backgroundColor,
+                    strokeStyle: "#fff",
+                    lineWidth: 1,
+                    hidden: chart.getDataVisibility(i) === false,
+                    index: i
+                  };
+                });
+              }
+            }
+          },
+
+          /* % INSIDE slices */
           datalabels: {
-            formatter: (value, context) => {
-              const label = context.chart.data.labels[context.dataIndex] || "";
-              const v = Number(value || 0);
-              const pct = (v / WEEK) * 100;
-
-              // hide tiny slices entirely to avoid clutter
-              if (pct < 3.5) return "";
-
-              return `${label}\n${pct.toFixed(1)}%`;
+            formatter: (value) => {
+              const pct = (Number(value || 0) / WEEK) * 100;
+              if (pct < 4) return "";
+              return pct.toFixed(1) + "%";
             },
-
             color: "#111",
-            font: { weight: "bold", size: 12 },
+            font: { weight: "800", size: 14 },
             textStrokeColor: "#fff",
-            textStrokeWidth: 3,
-
-            anchor: "end",
-            align: "end",
-            offset: 12,
+            textStrokeWidth: 4,
+            anchor: "center",
+            align: "center",
             clamp: true
           },
 
@@ -426,11 +444,6 @@
               }
             }
           }
-        },
-
-        /* Give more padding so labels have room */
-        layout: {
-          padding: { top: 10, right: 60, bottom: 10, left: 60 }
         }
       }
     });
@@ -462,7 +475,7 @@
       statusEl.textContent = `You have ${(WEEK - used).toFixed(1)} hours remaining.`;
     }
 
-    // If all zeros, show an empty chart
+    /* If all zeros, show an empty chart */
     if (used === 0){
       chart.data.labels = [];
       chart.data.datasets[0].data = [];
@@ -476,6 +489,7 @@
       .filter(x => x.value > 0)
       .sort((a,b)=>b.value-a.value);
 
+    /* Keep Remaining slice so chart % matches table (% of week) */
     if (remaining > 0){
       items.push({ label: "Remaining", value: remaining, color: "#E6E6E6" });
     }

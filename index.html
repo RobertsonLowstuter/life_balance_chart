@@ -10,41 +10,153 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
   <style>
-    :root { --bg:#f7f7f7; --card:#fff; --text:#111; --muted:#666; --danger:#b00020; --ok:#147a3a; }
+    :root {
+      --bg:#f7f7f7;
+      --card:#fff;
+      --text:#111;
+      --muted:#666;
+      --danger:#b00020;
+      --ok:#147a3a;
+
+      /* Brand */
+      --brand:#28456A;
+      --brand-muted:#5E6F86;
+    }
+
     *{ box-sizing:border-box; }
+
     body{
-      margin:0; font-family: Arial, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: var(--bg); color: var(--text);
+      margin:0;
+      font-family: Calibri, "Segoe UI", Arial, system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       padding: 22px;
     }
-    .wrap{ max-width: 1100px; margin:0 auto; display:grid; gap:16px; grid-template-columns: 1.2fr .8fr; }
-    @media (max-width: 980px){ .wrap{ grid-template-columns: 1fr; } }
+
+    /* ===== Brand Header ===== */
+    .brand-header{
+      display:flex;
+      justify-content: space-between;
+      align-items: stretch;
+      border-top: 4px solid var(--brand);
+      border-bottom: 4px solid var(--brand);
+      margin: 6px auto 18px auto;
+      max-width: 1100px;
+      background: #fff;
+    }
+    .brand-left{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+      padding: 14px 18px;
+    }
+    .brand-logo{
+      font-family: Calibri, "Segoe UI", serif;
+      font-size: 42px;
+      font-weight: 300;
+      color: var(--brand);
+      border-right: 3px solid var(--brand);
+      padding-right: 14px;
+      line-height: 1;
+      letter-spacing: 1px;
+    }
+    .brand-name{
+      font-size: 24px;
+      letter-spacing: 2px;
+      color: var(--brand);
+      text-transform: uppercase;
+    }
+    .brand-right{
+      background: var(--brand);
+      color:#fff;
+      font-weight: 700;
+      padding: 0 24px;
+      display:flex;
+      align-items:center;
+      letter-spacing: 1px;
+      font-size: 14px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* ===== Layout ===== */
+    .wrap{
+      max-width: 1100px;
+      margin:0 auto;
+      display:grid;
+      gap:16px;
+      grid-template-columns: 1.2fr .8fr;
+    }
+    @media (max-width: 980px){
+      .wrap{ grid-template-columns: 1fr; }
+      .brand-right{ display:none; } /* keep header clean on narrow screens */
+      .brand-name{ font-size: 18px; letter-spacing: 1px; }
+      .brand-logo{ font-size: 36px; }
+    }
+
     .card{
-      background: var(--card); border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,.08);
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.08);
       padding: 16px;
     }
-    h1{ font-size: 20px; margin: 0 0 10px; }
-    .sub{ color: var(--muted); font-size: 13px; margin: 0 0 14px; line-height: 1.4; }
+
+    h1{
+      font-size: 20px;
+      margin: 0 0 10px;
+      color: var(--brand);
+    }
+
+    .sub{
+      color: var(--brand-muted);
+      font-size: 13px;
+      margin: 0 0 14px;
+      line-height: 1.4;
+    }
+
     table{ width:100%; border-collapse: collapse; }
-    th, td{ padding: 10px 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
-    th{ text-align:left; font-size: 13px; color: var(--muted); font-weight: 700; }
-    td:nth-child(2), td:nth-child(3), th:nth-child(2), th:nth-child(3){ text-align:right; }
+    th, td{
+      padding: 10px 8px;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+    }
+    th{
+      text-align:left;
+      font-size: 13px;
+      color: var(--brand-muted);
+      font-weight: 700;
+    }
+    td:nth-child(2), td:nth-child(3),
+    th:nth-child(2), th:nth-child(3){ text-align:right; }
 
     input[type="number"]{
-      width: 110px; padding: 8px 10px; border-radius: 10px; border: 1px solid #ddd; font-size: 14px;
+      width: 110px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-size: 14px;
       text-align: right;
+      font-family: inherit;
     }
 
     .pct{ font-variant-numeric: tabular-nums; color:#222; }
 
     .totals{
-      display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
     }
     .pill{
-      border: 1px solid #eee; border-radius: 12px; padding: 10px 12px;
-      display:flex; justify-content: space-between; align-items: baseline; gap: 10px;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 10px 12px;
+      display:flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
     }
-    .pill .k{ color: var(--muted); font-size: 13px; }
+    .pill .k{ color: var(--brand-muted); font-size: 13px; }
     .pill .v{ font-weight: 800; font-variant-numeric: tabular-nums; }
 
     .status{ margin-top: 10px; font-size: 13px; }
@@ -53,17 +165,26 @@
 
     .btnrow{ display:flex; flex-wrap: wrap; gap:10px; margin-top: 12px; }
     button{
-      border:none; border-radius: 12px; padding: 10px 12px; cursor:pointer;
+      border:none;
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor:pointer;
       box-shadow: 0 2px 6px rgba(0,0,0,.08);
       font-weight: 700;
+      font-family: inherit;
     }
-    button.secondary{ background:#eee; }
-    button.primary{ background:#111; color:#fff; }
+    button.secondary{ background:#eee; color:#111; }
+    button.primary{ background: var(--brand); color:#fff; }
     button:disabled{ opacity:.5; cursor:not-allowed; }
 
     .chartBox{ height: 460px; }
-    .legendNote{ margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.4; }
-    .small{ font-size:12px; color: var(--muted); }
+    .legendNote{
+      margin-top: 8px;
+      color: var(--brand-muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .small{ font-size:12px; color: var(--brand-muted); }
 
     @media print {
       body { background: #fff; padding: 0; }
@@ -71,11 +192,21 @@
       .card { box-shadow: none; }
       .wrap { grid-template-columns: 1fr; }
       .chartBox { height: 520px; }
+      .brand-header{ margin-bottom: 24px; }
     }
   </style>
 </head>
 
 <body>
+  <!-- Branded Header -->
+  <div class="brand-header">
+    <div class="brand-left">
+      <span class="brand-logo">RL</span>
+      <span class="brand-name">Robertson Lowstuter</span>
+    </div>
+    <div class="brand-right">PERSONAL &amp; CONFIDENTIAL</div>
+  </div>
+
   <div class="wrap">
     <div class="card">
       <h1>Life Balance Planner (168-hour week)</h1>
@@ -129,7 +260,7 @@
 <script>
 (() => {
   const WEEK = 168;
-  const LS_KEY = "life_balance_hours_v3";
+  const LS_KEY = "life_balance_hours_brand_v1";
 
   const CATEGORIES = [
     { label: "Family",            key: "family",           color: "#CEA8F0" },
@@ -258,7 +389,6 @@
           datalabels: {
             formatter: (value) => {
               const pct = (Number(value || 0) / WEEK) * 100;
-              // hide tiny labels to prevent overlap
               if (pct < 4) return "";
               return pct.toFixed(1) + "%";
             },
@@ -271,7 +401,7 @@
             clamp: true
           },
 
-          // Tooltip shows hours + % of week (clean, consistent)
+          // Tooltip shows hours + % of week
           tooltip: {
             callbacks: {
               label: (context) => {
@@ -300,13 +430,11 @@
     pctUsedEl.textContent = ((used / WEEK) * 100).toFixed(1) + "%";
     pctRemainingEl.textContent = ((remaining / WEEK) * 100).toFixed(1) + "%";
 
-    // Table row % values (always % of week)
     for (const c of CATEGORIES){
       const v = Number(state[c.key] || 0);
       document.getElementById("pct_" + c.key).textContent = fmtPctOfWeek(v);
     }
 
-    // Status message
     if (used > WEEK){
       statusEl.className = "status bad";
       statusEl.textContent = `Total exceeds ${WEEK} hours by ${(used - WEEK).toFixed(1)}. Reduce inputs.`;
@@ -315,13 +443,11 @@
       statusEl.textContent = `You have ${(WEEK - used).toFixed(1)} hours remaining.`;
     }
 
-    // Chart items: show non-zero categories, sorted desc
     const items = CATEGORIES
       .map(c => ({ label: c.label, value: Number(state[c.key] || 0), color: c.color }))
       .filter(x => x.value > 0)
       .sort((a,b)=>b.value-a.value);
 
-    // Add remaining slice so chart represents the full 168-hour week
     if (remaining > 0){
       items.push({ label: "Remaining", value: remaining, color: "#E6E6E6" });
     }
@@ -380,6 +506,9 @@
   initChart();
   updateUI();
 })();
+</script>
+</body>
+</html>
 </script>
 </body>
 </html>

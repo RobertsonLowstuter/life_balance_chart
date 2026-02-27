@@ -19,9 +19,9 @@
       --ok:#147a3a;
 
       /* Brand */
-      --brand:#28456A;              /* headings + buttons */
+      --brand:#28456A;
       --brand-muted:#5E6F86;
-      --brand-header-bg:#28456A;    /* header background (blue) */
+      --brand-header-bg:#28456A;
     }
 
     *{ box-sizing:border-box; }
@@ -37,12 +37,12 @@
     /* ===== Brand Header (tight, aligned) ===== */
     .brand-header{
       display:flex;
-      align-items:center;           /* vertical centering */
+      align-items:center;
       justify-content: space-between;
       background: var(--brand-header-bg);
-      max-width: 1100px;
+      max-width: 1240px;
       margin: 6px auto 18px auto;
-      height: 104px;                 /* not billboard-tall */
+      height: 104px;           /* allows bigger logo */
       padding: 0 18px;
       overflow: hidden;
     }
@@ -53,12 +53,11 @@
       min-width:0;
     }
 
-    /* Use the real logo image for exact match */
     .brand-logo-img{
-      height: 82px;                 /* bigger logo */
+      height: 82px;            /* bigger logo */
       width: auto;
       display:block;
-      margin-left: 12px;            /* breathing room from edge */
+      margin-left: 12px;
     }
 
     .brand-right{
@@ -69,24 +68,25 @@
       letter-spacing: 0.3px;
       white-space: nowrap;
       margin-left: 18px;
+      margin-right: 12px;
       opacity: 0.95;
     }
 
-    @media (max-width: 820px){
+    @media (max-width: 900px){
       .brand-right{ display:none; }
-      .brand-header{ height: 78px; }
-      .brand-logo-img{ height: 54px; margin-left: 8px; }
+      .brand-header{ height: 88px; }
+      .brand-logo-img{ height: 62px; margin-left: 8px; }
     }
 
     /* ===== Layout ===== */
     .wrap{
-      max-width: 1100px;
+      max-width: 1240px;                 /* wider page to allow outside labels */
       margin:0 auto;
       display:grid;
       gap:16px;
-      grid-template-columns: 1.2fr .8fr;
+      grid-template-columns: 1.05fr 0.95fr; /* give chart more room */
     }
-    @media (max-width: 980px){
+    @media (max-width: 1100px){
       .wrap{ grid-template-columns: 1fr; }
     }
 
@@ -116,11 +116,19 @@
       border-bottom: 1px solid #eee;
       vertical-align: middle;
     }
+
+    /* (2) Table header row: white text, brand blue background, larger */
+    thead th{
+      background: var(--brand);
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+      border-bottom: none;
+      padding: 12px 10px;
+    }
+
     th{
       text-align:left;
-      font-size: 13px;
-      color: var(--brand-muted);
-      font-weight: 700;
     }
     td:nth-child(2), td:nth-child(3),
     th:nth-child(2), th:nth-child(3){ text-align:right; }
@@ -160,20 +168,22 @@
     .status.bad{ color: var(--danger); }
 
     .btnrow{ display:flex; flex-wrap: wrap; gap:10px; margin-top: 12px; }
+
+    /* (3) Buttons: title case + brand blue */
     button{
       border:none;
       border-radius: 12px;
-      padding: 10px 12px;
+      padding: 10px 14px;
       cursor:pointer;
       box-shadow: 0 2px 6px rgba(0,0,0,.08);
-      font-weight: 700;
+      font-weight: 800;
       font-family: inherit;
+      background: var(--brand);
+      color:#fff;
     }
-    button.secondary{ background:#eee; color:#111; }
-    button.primary{ background: var(--brand); color:#fff; }
     button:disabled{ opacity:.5; cursor:not-allowed; }
 
-    .chartBox{ height: 460px; }
+    .chartBox{ height: 520px; } /* more room for outside labels */
 
     .legendNote{
       margin-top: 8px;
@@ -187,9 +197,10 @@
       .btnrow, .legendNote { display:none !important; }
       .card { box-shadow:none; }
       .wrap { grid-template-columns: 1fr; }
-      .chartBox { height: 520px; }
+      .chartBox { height: 560px; }
       .brand-header{ margin-bottom: 24px; }
       .brand-right{ display:block !important; }
+      thead th{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
 </head>
@@ -216,8 +227,8 @@
         <thead>
           <tr>
             <th>Category</th>
-            <th>Hours / week</th>
-            <th>% of week</th>
+            <th>Hours / Week</th>
+            <th>% of Week</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -233,9 +244,9 @@
       <div class="status ok" id="status">Ready.</div>
 
       <div class="btnrow">
-        <button class="primary" id="downloadPngBtn">Download chart (PNG)</button>
-        <button class="secondary" id="printBtn">Print / Save as PDF</button>
-        <button class="secondary" id="clearBtn">Clear all</button>
+        <button id="downloadPngBtn">Download Chart (PNG)</button>
+        <button id="printBtn">Print / Save as PDF</button>
+        <button id="clearBtn">Clear All</button>
       </div>
 
       <div class="legendNote">
@@ -244,8 +255,10 @@
     </div>
 
     <div class="card">
-      <h1>Pie Chart</h1>
-      <p class="sub">Distribution of your 168-hour week. Tiny slices hide labels to prevent overlap.</p>
+      <!-- (1) Title change -->
+      <h1>Life Balance Pie Chart</h1>
+      <p class="sub">Labels are placed near slices. Tiny slices hide labels to prevent overlap.</p>
+
       <div class="chartBox">
         <canvas id="chartCanvas"></canvas>
       </div>
@@ -255,7 +268,7 @@
 <script>
 (() => {
   const WEEK = 168;
-  const LS_KEY = "life_balance_hours_brand_final_v2";
+  const LS_KEY = "life_balance_hours_brand_v3";
 
   const CATEGORIES = [
     { label: "Family",            key: "family",           color: "#CEA8F0" },
@@ -374,25 +387,35 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+
+        /* (4) Turn OFF top legend; we will label slices directly */
         plugins: {
-          legend: {
-            position: "top",
-            labels: { boxWidth: 14, padding: 10 }
-          },
+          legend: { display: false },
+
+          /* Outside labels next to slices */
           datalabels: {
-            formatter: (value) => {
-              const pct = (Number(value || 0) / WEEK) * 100;
-              if (pct < 4) return "";
-              return pct.toFixed(1) + "%";
+            formatter: (value, context) => {
+              const label = context.chart.data.labels[context.dataIndex] || "";
+              const v = Number(value || 0);
+              const pct = (v / WEEK) * 100;
+
+              // hide tiny slices entirely to avoid clutter
+              if (pct < 3.5) return "";
+
+              return `${label}\n${pct.toFixed(1)}%`;
             },
+
             color: "#111",
-            font: { weight: "bold", size: 14 },
+            font: { weight: "bold", size: 12 },
             textStrokeColor: "#fff",
             textStrokeWidth: 3,
-            anchor: "center",
-            align: "center",
+
+            anchor: "end",
+            align: "end",
+            offset: 12,
             clamp: true
           },
+
           tooltip: {
             callbacks: {
               label: (context) => {
@@ -403,6 +426,11 @@
               }
             }
           }
+        },
+
+        /* Give more padding so labels have room */
+        layout: {
+          padding: { top: 10, right: 60, bottom: 10, left: 60 }
         }
       }
     });
@@ -434,7 +462,7 @@
       statusEl.textContent = `You have ${(WEEK - used).toFixed(1)} hours remaining.`;
     }
 
-    /* If all zeros, show an empty chart (not 100% Remaining) */
+    // If all zeros, show an empty chart
     if (used === 0){
       chart.data.labels = [];
       chart.data.datasets[0].data = [];
@@ -506,6 +534,9 @@
   initChart();
   updateUI();
 })();
+</script>
+</body>
+</html>
 </script>
 </body>
 </html>

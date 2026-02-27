@@ -42,7 +42,7 @@
       background: var(--brand-header-bg);
       max-width: 1240px;
       margin: 6px auto 18px auto;
-      height: 104px;              /* sized for large logo */
+      height: 104px;
       padding: 0 18px;
       overflow: hidden;
     }
@@ -54,7 +54,7 @@
     }
 
     .brand-logo-img{
-      height: 82px;               /* large logo */
+      height: 82px;
       width: auto;
       display:block;
       margin-left: 12px;
@@ -117,7 +117,6 @@
       vertical-align: middle;
     }
 
-    /* Table header row: white text, brand blue background, larger */
     thead th{
       background: var(--brand);
       color: #fff;
@@ -138,6 +137,16 @@
       border: 1px solid #ddd;
       font-size: 14px;
       text-align: right;
+      font-family: inherit;
+    }
+
+    /* “Other” label inputs */
+    .other-label{
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-size: 14px;
       font-family: inherit;
     }
 
@@ -167,7 +176,6 @@
 
     .btnrow{ display:flex; flex-wrap: wrap; gap:10px; margin-top: 12px; }
 
-    /* Buttons: brand blue, title case labels already in HTML */
     button{
       border:none;
       border-radius: 12px;
@@ -256,7 +264,7 @@
     <!-- Chart -->
     <div class="card">
       <h1>Life Balance Pie Chart</h1>
-      <p class="sub">Clean pie with % inside slices. Legend on the right matches slice colors.</p>
+      <p class="sub">Percentages display inside slices. Legend on the right matches slice colors.</p>
 
       <div class="chartBox">
         <canvas id="chartCanvas"></canvas>
@@ -267,22 +275,24 @@
 <script>
 (() => {
   const WEEK = 168;
-  const LS_KEY = "life_balance_hours_brand_v4";
+  const LS_KEY = "life_balance_hours_brand_v5"; // includes other labels + hours
 
   const CATEGORIES = [
-    { label: "Family",            key: "family",           color: "#CEA8F0" },
-    { label: "Friends",           key: "friends",          color: "#FFC2E8" },
-    { label: "Work",              key: "work",             color: "#D8B6A1" },
-    { label: "Sleep/Rest",        key: "sleep",            color: "#FFF3C5" },
-    { label: "Eating/Food Prep",  key: "eating",           color: "#D2F1C3" },
-    { label: "Health/Fitness",    key: "health",           color: "#C2DCFF" },
-    { label: "Self-Improvement",  key: "self_improvement", color: "#FF9999" },
-    { label: "Hobbies",           key: "hobbies",          color: "#C1FF72" },
-    { label: "Service/Charity",   key: "service",          color: "#FFDE59" },
-    { label: "Spirituality",      key: "spirituality",     color: "#FF914D" },
-    { label: "Self-Care",         key: "self_care",        color: "#74A45A" },
-    { label: "Other 1",           key: "other1",           color: "#6DB4FF" },
-    { label: "Other 2",           key: "other2",           color: "#997CAB" }
+    { label: "Family",            key: "family",           color: "#CEA8F0", labelEditable: false },
+    { label: "Friends",           key: "friends",          color: "#FFC2E8", labelEditable: false },
+    { label: "Work",              key: "work",             color: "#D8B6A1", labelEditable: false },
+    { label: "Sleep/Rest",        key: "sleep",            color: "#FFF3C5", labelEditable: false },
+    { label: "Eating/Food Prep",  key: "eating",           color: "#D2F1C3", labelEditable: false },
+    { label: "Health/Fitness",    key: "health",           color: "#C2DCFF", labelEditable: false },
+    { label: "Self-Improvement",  key: "self_improvement", color: "#FF9999", labelEditable: false },
+    { label: "Hobbies",           key: "hobbies",          color: "#C1FF72", labelEditable: false },
+    { label: "Service/Charity",   key: "service",          color: "#FFDE59", labelEditable: false },
+    { label: "Spirituality",      key: "spirituality",     color: "#FF914D", labelEditable: false },
+    { label: "Self-Care",         key: "self_care",        color: "#74A45A", labelEditable: false },
+
+    // Editable labels
+    { label: "Other 1",           key: "other1",           color: "#6DB4FF", labelEditable: true },
+    { label: "Other 2",           key: "other2",           color: "#997CAB", labelEditable: true }
   ];
 
   const rowsEl = document.getElementById("rows");
@@ -310,24 +320,62 @@
   function loadState(){
     try{
       const raw = localStorage.getItem(LS_KEY);
-      if (!raw) return {};
+      if (!raw) return { hours: {}, labels: {} };
       const obj = JSON.parse(raw);
-      return obj && typeof obj === "object" ? obj : {};
+      if (!obj || typeof obj !== "object") return { hours: {}, labels: {} };
+      return {
+        hours: (obj.hours && typeof obj.hours === "object") ? obj.hours : {},
+        labels: (obj.labels && typeof obj.labels === "object") ? obj.labels : {}
+      };
     }catch{
-      return {};
+      return { hours: {}, labels: {} };
     }
   }
+
   function saveState(state){
     try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch{}
   }
 
-  function buildTable(state){
+  function getCustomLabel(key){
+    // Return the custom label input if present, else stored label, else default
+    const input = document.getElementById("label_" + key);
+    const typed = input ? input.value.trim() : "";
+    if (typed) return typed;
+
+    // fallback: stored label from localStorage state
+    const stored = currentState.labels[key];
+    if (stored && ("" + stored).trim()) return ("" + stored).trim();
+
+    // fallback: default label from category
+    const cat = CATEGORIES.find(c => c.key === key);
+    return cat ? cat.label : key;
+  }
+
+  function buildTable(){
     rowsEl.innerHTML = "";
+
     for (const c of CATEGORIES){
       const tr = document.createElement("tr");
 
       const td1 = document.createElement("td");
-      td1.textContent = c.label;
+
+      if (c.labelEditable){
+        const lbl = document.createElement("input");
+        lbl.type = "text";
+        lbl.id = "label_" + c.key; // label_other1 / label_other2
+        lbl.className = "other-label";
+        lbl.placeholder = c.label;
+
+        const saved = currentState.labels[c.key];
+        if (saved && ("" + saved).trim()) lbl.value = ("" + saved).trim();
+
+        lbl.addEventListener("input", onAnyChange);
+        lbl.addEventListener("blur", onAnyChange);
+
+        td1.appendChild(lbl);
+      } else {
+        td1.textContent = c.label;
+      }
 
       const td2 = document.createElement("td");
       const inp = document.createElement("input");
@@ -336,7 +384,10 @@
       inp.min = "0";
       inp.inputMode = "decimal";
       inp.id = "hours_" + c.key;
-      inp.value = (state[c.key] ?? "").toString();
+
+      const savedHours = currentState.hours[c.key];
+      inp.value = (savedHours ?? "").toString();
+
       inp.addEventListener("input", onAnyChange);
       inp.addEventListener("blur", onAnyChange);
       td2.appendChild(inp);
@@ -353,17 +404,29 @@
     }
   }
 
-  function getHoursState(){
-    const out = {};
+  function readStateFromUI(){
+    const hours = {};
+    const labels = {};
+
     for (const c of CATEGORIES){
-      const el = document.getElementById("hours_" + c.key);
-      const v = clampNonNeg(parseFloat(el.value));
-      if (v > 0) out[c.key] = v;
+      // hours
+      const hEl = document.getElementById("hours_" + c.key);
+      const v = clampNonNeg(parseFloat(hEl.value));
+      if (v > 0) hours[c.key] = v;
+
+      // labels (only for editable ones)
+      if (c.labelEditable){
+        const lEl = document.getElementById("label_" + c.key);
+        const t = (lEl ? lEl.value.trim() : "");
+        if (t) labels[c.key] = t;
+      }
     }
-    return out;
+
+    return { hours, labels };
   }
 
   let chart;
+  let currentState = loadState();
 
   function initChart(){
     const canvas = document.getElementById("chartCanvas");
@@ -387,7 +450,7 @@
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          /* Legend on the RIGHT, includes percentages (matches slice colors) */
+          // Legend on the RIGHT, includes percentages (relative to the pie total)
           legend: {
             display: true,
             position: "right",
@@ -418,7 +481,7 @@
             }
           },
 
-          /* % INSIDE slices */
+          // % INSIDE slices (based on 168-hour week)
           datalabels: {
             formatter: (value) => {
               const pct = (Number(value || 0) / WEEK) * 100;
@@ -450,10 +513,10 @@
   }
 
   function updateUI(){
-    const state = getHoursState();
-    saveState(state);
+    currentState = readStateFromUI();
+    saveState(currentState);
 
-    const used = Object.values(state).reduce((a,b) => a + Number(b || 0), 0);
+    const used = Object.values(currentState.hours).reduce((a,b) => a + Number(b || 0), 0);
     const remaining = WEEK - used;
 
     totalUsedEl.textContent = fmtNum(used);
@@ -463,7 +526,7 @@
     pctRemainingEl.textContent = ((remaining / WEEK) * 100).toFixed(1) + "%";
 
     for (const c of CATEGORIES){
-      const v = Number(state[c.key] || 0);
+      const v = Number(currentState.hours[c.key] || 0);
       document.getElementById("pct_" + c.key).textContent = fmtPctOfWeek(v);
     }
 
@@ -475,7 +538,7 @@
       statusEl.textContent = `You have ${(WEEK - used).toFixed(1)} hours remaining.`;
     }
 
-    /* If all zeros, show an empty chart */
+    // If all zeros, show an empty chart
     if (used === 0){
       chart.data.labels = [];
       chart.data.datasets[0].data = [];
@@ -484,12 +547,17 @@
       return;
     }
 
+    // Build items (use custom labels for Other 1/2)
     const items = CATEGORIES
-      .map(c => ({ label: c.label, value: Number(state[c.key] || 0), color: c.color }))
+      .map(c => {
+        const val = Number(currentState.hours[c.key] || 0);
+        const label = c.labelEditable ? getCustomLabel(c.key) : c.label;
+        return { label, value: val, color: c.color };
+      })
       .filter(x => x.value > 0)
       .sort((a,b)=>b.value-a.value);
 
-    /* Keep Remaining slice so chart % matches table (% of week) */
+    // Keep Remaining slice so chart % matches table (% of week)
     if (remaining > 0){
       items.push({ label: "Remaining", value: remaining, color: "#E6E6E6" });
     }
@@ -534,23 +602,29 @@
   printBtn.addEventListener("click", () => window.print());
 
   clearBtn.addEventListener("click", () => {
-    if (!confirm("Clear all hours?")) return;
+    if (!confirm("Clear all hours and labels?")) return;
+
+    // Clear all UI inputs
     for (const c of CATEGORIES){
-      document.getElementById("hours_" + c.key).value = "";
+      const hEl = document.getElementById("hours_" + c.key);
+      if (hEl) hEl.value = "";
+
+      if (c.labelEditable){
+        const lEl = document.getElementById("label_" + c.key);
+        if (lEl) lEl.value = "";
+      }
     }
-    saveState({});
+
+    currentState = { hours: {}, labels: {} };
+    saveState(currentState);
     updateUI();
   });
 
   // Boot
-  const state = loadState();
-  buildTable(state);
+  buildTable();
   initChart();
   updateUI();
 })();
-</script>
-</body>
-</html>
 </script>
 </body>
 </html>

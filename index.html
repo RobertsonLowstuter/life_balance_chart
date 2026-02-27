@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Life Balance Planner (168-hour week)</title>
 
-  <!-- Chart.js (CDN) -->
+  <!-- Chart.js + DataLabels plugin -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
   <style>
     :root { --bg:#f7f7f7; --card:#fff; --text:#111; --muted:#666; --danger:#b00020; --ok:#147a3a; }
@@ -28,11 +29,14 @@
     th, td{ padding: 10px 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
     th{ text-align:left; font-size: 13px; color: var(--muted); font-weight: 700; }
     td:nth-child(2), td:nth-child(3), th:nth-child(2), th:nth-child(3){ text-align:right; }
+
     input[type="number"]{
       width: 110px; padding: 8px 10px; border-radius: 10px; border: 1px solid #ddd; font-size: 14px;
       text-align: right;
     }
+
     .pct{ font-variant-numeric: tabular-nums; color:#222; }
+
     .totals{
       display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;
     }
@@ -42,6 +46,7 @@
     }
     .pill .k{ color: var(--muted); font-size: 13px; }
     .pill .v{ font-weight: 800; font-variant-numeric: tabular-nums; }
+
     .status{ margin-top: 10px; font-size: 13px; }
     .status.ok{ color: var(--ok); }
     .status.bad{ color: var(--danger); }
@@ -75,7 +80,8 @@
     <div class="card">
       <h1>Life Balance Planner (168-hour week)</h1>
       <p class="sub">
-        Enter hours per week. Percentages + totals update automatically. Your entries auto-save in this browser on this device.
+        Enter hours per week. Percentages + totals update automatically.
+        Your entries auto-save in this browser on this device.
       </p>
 
       <table>
@@ -115,16 +121,14 @@
       <div class="chartBox">
         <canvas id="chartCanvas"></canvas>
       </div>
-      <div class="small">
-        Data is saved locally in the browser (localStorage). No accounts required.
-      </div>
+      <div class="small">No accounts. Data saves locally in your browser.</div>
     </div>
   </div>
 
 <script>
 (() => {
   const WEEK = 168;
-  const LS_KEY = "life_balance_hours_v1";
+  const LS_KEY = "life_balance_hours_v2"; // bump key so you don't inherit old data bugs
 
   const CATEGORIES = [
     { label: "Family", key: "family", color: "#CEA8F0" },
@@ -218,8 +222,15 @@
   }
 
   let chart;
+
   function initChart(){
     const ctx = document.getElementById("chartCanvas").getContext("2d");
+
+    // Register DataLabels plugin
+    if (typeof ChartDataLabels !== "undefined") {
+      Chart.register(ChartDataLabels);
+    }
+
     chart = new Chart(ctx, {
       type: "pie",
       data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 1 }] },
@@ -228,6 +239,27 @@
         maintainAspectRatio: false,
         plugins: {
           legend: { position: "top", labels: { boxWidth: 14, padding: 10 } },
+
+          // % labels in slices
+          datalabels: {
+            formatter: (value, context) => {
+              const data = context.chart.data.datasets[0].data || [];
+              const total = data.reduce((a, b) => a + Number(b || 0), 0);
+              if (!total) return "";
+              const pct = (value / total) * 100;
+              // hide tiny labels to prevent overlap
+              if (pct < 4) return "";
+              return pct.toFixed(1) + "%";
+            },
+            color: "#111",
+            font: { weight: "bold", size: 14 },
+            textStrokeColor: "#fff",
+            textStrokeWidth: 3,
+            anchor: "center",
+            align: "center",
+            clamp: true
+          },
+
           tooltip: {
             callbacks: {
               label: (context) => {
@@ -330,8 +362,5 @@
   updateUI();
 })();
 </script>
-</body>
-</html>
-
 </body>
 </html>

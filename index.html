@@ -1,229 +1,337 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Life Balance Pie Chart</title>
-  <script src="chart.js"></script>
-  <script src="chartjs-plugin-datalabels.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Life Balance Planner (168-hour week)</title>
+
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root { --bg:#f7f7f7; --card:#fff; --text:#111; --muted:#666; --danger:#b00020; --ok:#147a3a; }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family: Arial, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      padding: 22px;
+    }
+    .wrap{ max-width: 1100px; margin:0 auto; display:grid; gap:16px; grid-template-columns: 1.2fr .8fr; }
+    @media (max-width: 980px){ .wrap{ grid-template-columns: 1fr; } }
+    .card{
+      background: var(--card); border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,.08);
+      padding: 16px;
+    }
+    h1{ font-size: 20px; margin: 0 0 10px; }
+    .sub{ color: var(--muted); font-size: 13px; margin: 0 0 14px; line-height: 1.4; }
+    table{ width:100%; border-collapse: collapse; }
+    th, td{ padding: 10px 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    th{ text-align:left; font-size: 13px; color: var(--muted); font-weight: 700; }
+    td:nth-child(2), td:nth-child(3), th:nth-child(2), th:nth-child(3){ text-align:right; }
+    input[type="number"]{
+      width: 110px; padding: 8px 10px; border-radius: 10px; border: 1px solid #ddd; font-size: 14px;
+      text-align: right;
+    }
+    .pct{ font-variant-numeric: tabular-nums; color:#222; }
+    .totals{
+      display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;
+    }
+    .pill{
+      border: 1px solid #eee; border-radius: 12px; padding: 10px 12px;
+      display:flex; justify-content: space-between; align-items: baseline; gap: 10px;
+    }
+    .pill .k{ color: var(--muted); font-size: 13px; }
+    .pill .v{ font-weight: 800; font-variant-numeric: tabular-nums; }
+    .status{ margin-top: 10px; font-size: 13px; }
+    .status.ok{ color: var(--ok); }
+    .status.bad{ color: var(--danger); }
+
+    .btnrow{ display:flex; flex-wrap: wrap; gap:10px; margin-top: 12px; }
+    button{
+      border:none; border-radius: 12px; padding: 10px 12px; cursor:pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,.08);
+      font-weight: 700;
+    }
+    button.secondary{ background:#eee; }
+    button.primary{ background:#111; color:#fff; }
+    button:disabled{ opacity:.5; cursor:not-allowed; }
+
+    .chartBox{ height: 440px; }
+    .legendNote{ margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .small{ font-size:12px; color: var(--muted); }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .btnrow, .legendNote, .small { display: none !important; }
+      .card { box-shadow: none; }
+      .wrap { grid-template-columns: 1fr; }
+      .chartBox { height: 520px; }
+    }
+  </style>
 </head>
 
-<body style="font-family: Arial; text-align: center; padding: 30px; background:#f7f7f7;">
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Life Balance Planner (168-hour week)</h1>
+      <p class="sub">
+        Enter hours per week. Percentages + totals update automatically. Your entries auto-save in this browser on this device.
+      </p>
 
-  <h2>Life Balance Pie Chart</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Hours / week</th>
+            <th>% of week</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
 
-  <div style="
-    width: 640px;
-    margin: 0 auto;
-    background: white;
-    padding: 18px 18px 22px 18px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  ">
+      <div class="totals">
+        <div class="pill"><div class="k">Total hours used</div><div class="v" id="totalUsed">0</div></div>
+        <div class="pill"><div class="k">Total hours remaining</div><div class="v" id="totalRemaining">168</div></div>
+        <div class="pill"><div class="k">% used</div><div class="v" id="pctUsed">0.0%</div></div>
+        <div class="pill"><div class="k">% remaining</div><div class="v" id="pctRemaining">100.0%</div></div>
+      </div>
 
-    <button id="downloadBtn" style="
-      padding: 10px 14px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      margin-bottom: 12px;
-    ">
-      Download Chart (PNG)
-    </button>
+      <div class="status ok" id="status">Ready.</div>
 
-    <div id="chartArea" style="height: 460px;">
-      <canvas id="chartCanvas"></canvas>
+      <div class="btnrow">
+        <button class="primary" id="downloadPngBtn">Download chart (PNG)</button>
+        <button class="secondary" id="printBtn">Print / Save as PDF</button>
+        <button class="secondary" id="clearBtn">Clear all</button>
+      </div>
+
+      <div class="legendNote">
+        Notes: Auto-save works on the same device/browser. If total hours exceed 168, we’ll flag it.
+      </div>
     </div>
 
+    <div class="card">
+      <h1>Pie Chart</h1>
+      <p class="sub">Only categories with > 0 hours are shown. Tiny slices hide labels to prevent overlap.</p>
+      <div class="chartBox">
+        <canvas id="chartCanvas"></canvas>
+      </div>
+      <div class="small">
+        Data is saved locally in the browser (localStorage). No accounts required.
+      </div>
+    </div>
   </div>
 
-  <script>
-    // ---- Helpers ----
-    function getParamNumber(name) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const raw = urlParams.get(name);
-      if (raw === null || raw === undefined) return 0;
+<script>
+(() => {
+  const WEEK = 168;
+  const LS_KEY = "life_balance_hours_v1";
 
-      // tolerate values like "12.5%" or " 12.5 "
-      const cleaned = ("" + raw).replace("%", "").trim();
-      const n = parseFloat(cleaned);
-      return isNaN(n) ? 0 : n;
+  const CATEGORIES = [
+    { label: "Family", key: "family", color: "#CEA8F0" },
+    { label: "Friends", key: "friends", color: "#FFC2E8" },
+    { label: "Work", key: "work", color: "#D8B6A1" },
+    { label: "Sleep/Rest", key: "sleep", color: "#FFF3C5" },
+    { label: "Eating/Food Prep", key: "eating", color: "#D2F1C3" },
+    { label: "Health/Fitness", key: "health", color: "#C2DCFF" },
+    { label: "Self-Improvement", key: "self_improvement", color: "#FF9999" },
+    { label: "Hobbies", key: "hobbies", color: "#C1FF72" },
+    { label: "Service/Charity", key: "service", color: "#FFDE59" },
+    { label: "Spirituality", key: "spirituality", color: "#FF914D" },
+    { label: "Self-Care", key: "self_care", color: "#74A45A" },
+    { label: "Other 1", key: "other1", color: "#6DB4FF" },
+    { label: "Other 2", key: "other2", color: "#997CAB" }
+  ];
+
+  const rowsEl = document.getElementById("rows");
+  const totalUsedEl = document.getElementById("totalUsed");
+  const totalRemainingEl = document.getElementById("totalRemaining");
+  const pctUsedEl = document.getElementById("pctUsed");
+  const pctRemainingEl = document.getElementById("pctRemaining");
+  const statusEl = document.getElementById("status");
+
+  const downloadPngBtn = document.getElementById("downloadPngBtn");
+  const printBtn = document.getElementById("printBtn");
+  const clearBtn = document.getElementById("clearBtn");
+
+  function clampNum(n){
+    if (!isFinite(n)) return 0;
+    if (n < 0) return 0;
+    return n;
+  }
+  function fmtPct(x){ return (x * 100).toFixed(1) + "%"; }
+  function fmtNum(x){ return (Math.round(x * 10) / 10).toString(); }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return {};
+      const obj = JSON.parse(raw);
+      return obj && typeof obj === "object" ? obj : {};
+    }catch{
+      return {};
     }
+  }
+  function saveState(state){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch{}
+  }
 
-    // ---- Fixed category -> color mapping (unique colors) ----
-    const COLOR_MAP = {
-      "Family": "#CEA8F0",
-      "Friends": "#FFC2E8",
-      "Work": "#D8B6A1",
-      "Sleep/Rest": "#FFF3C5",
-      "Eating/Food Prep": "#D2F1C3",
-      "Health/Fitness": "#C2DCFF",
-      "Self-Improvement": "#FF9999",
-      "Hobbies": "#C1FF72",
-      "Service/Charity": "#FFDE59",
-      "Spirituality": "#FF914D",
-      "Self-Care": "#74A45A",
-      "Other 1": "#6DB4FF",
-      "Other 2": "#997CAB"
-    };
+  function buildTable(state){
+    rowsEl.innerHTML = "";
+    for (const c of CATEGORIES){
+      const tr = document.createElement("tr");
 
-    // ---- Read + transform data (hide zeros + sort desc) ----
-    const rawItems = [
-      { label: "Family", key: "family" },
-      { label: "Friends", key: "friends" },
-      { label: "Work", key: "work" },
-      { label: "Sleep/Rest", key: "sleep" },
-      { label: "Eating/Food Prep", key: "eating" },
-      { label: "Health/Fitness", key: "health" },
-      { label: "Self-Improvement", key: "self_improvement" },
-      { label: "Hobbies", key: "hobbies" },
-      { label: "Service/Charity", key: "service" },
-      { label: "Spirituality", key: "spirituality" },
-      { label: "Self-Care", key: "self_care" },
-      { label: "Other 1", key: "other1" },
-      { label: "Other 2", key: "other2" }
-    ];
+      const td1 = document.createElement("td");
+      td1.textContent = c.label;
 
-    const items = rawItems
-      .map(it => ({ label: it.label, value: getParamNumber(it.key) }))
-      .filter(it => it.value > 0)               // hide zeros
-      .sort((a, b) => b.value - a.value);       // sort largest -> smallest
+      const td2 = document.createElement("td");
+      const inp = document.createElement("input");
+      inp.type = "number";
+      inp.step = "1";
+      inp.min = "0";
+      inp.inputMode = "decimal";
+      inp.id = "hours_" + c.key;
+      inp.value = (state[c.key] ?? "").toString();
+      inp.addEventListener("input", onAnyChange);
+      inp.addEventListener("blur", onAnyChange);
+      td2.appendChild(inp);
 
-    const labels = items.map(it => it.label);
-    const dataValues = items.map(it => it.value);
-    const backgroundColors = labels.map(l => COLOR_MAP[l] || "#999999");
-    const total = dataValues.reduce((a, b) => a + b, 0);
+      const td3 = document.createElement("td");
+      td3.className = "pct";
+      td3.id = "pct_" + c.key;
+      td3.textContent = "0.0%";
 
-    // ---- No data handling (fail loudly, not silently) ----
-    const chartArea = document.getElementById("chartArea");
-    const downloadBtn = document.getElementById("downloadBtn");
-
-    if (!total) {
-      if (chartArea) {
-        chartArea.innerHTML =
-          "<div style='padding:18px;color:#666;line-height:1.4;'>" +
-          "No data received.<br/>" +
-          "Open this page from the PDF button so values are included in the link." +
-          "</div>";
-      }
-      if (downloadBtn) downloadBtn.disabled = true;
-      throw new Error("No data received (total = 0). Check URL parameters.");
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      tr.appendChild(td3);
+      rowsEl.appendChild(tr);
     }
+  }
 
-    // ---- Chart rendering ----
-    const canvasEl = document.getElementById("chartCanvas");
-    const ctx = canvasEl.getContext("2d");
-
-    // Register plugin (chartjs-plugin-datalabels.js must be loaded)
-    if (typeof ChartDataLabels !== "undefined") {
-      Chart.register(ChartDataLabels);
-    } else {
-      console.warn("ChartDataLabels plugin not found. % labels will not render.");
+  function getHoursState(){
+    const out = {};
+    for (const c of CATEGORIES){
+      const el = document.getElementById("hours_" + c.key);
+      const v = clampNum(parseFloat(el.value));
+      if (v > 0) out[c.key] = v;
     }
+    return out;
+  }
 
-    const chart = new Chart(ctx, {
+  let chart;
+  function initChart(){
+    const ctx = document.getElementById("chartCanvas").getContext("2d");
+    chart = new Chart(ctx, {
       type: "pie",
-      data: {
-        labels: labels,
-        datasets: [{
-          data: dataValues,
-          backgroundColor: backgroundColors,
-          borderWidth: 1
-        }]
-      },
+      data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 1 }] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: {
-            position: "top",
-            labels: {
-              boxWidth: 14,
-              padding: 10,
-              generateLabels: (c) => {
-                const data = c.data;
-                const dataset = data.datasets[0];
-                const values = dataset.data || [];
-                const t = values.reduce((a, b) => a + Number(b || 0), 0);
-
-                return data.labels.map((label, i) => {
-                  const v = Number(values[i] || 0);
-                  const pct = t ? (v / t) * 100 : 0;
-
-                  return {
-                    text: `${label} (${pct.toFixed(1)}%)`,
-                    fillStyle: Array.isArray(dataset.backgroundColor)
-                      ? dataset.backgroundColor[i]
-                      : dataset.backgroundColor,
-                    strokeStyle: "#fff",
-                    lineWidth: 1,
-                    hidden: c.getDataVisibility(i) === false,
-                    index: i
-                  };
-                });
-              }
-            }
-          },
-          datalabels: {
-            formatter: (value) => {
-              const pct = (value / total) * 100;
-              if (pct < 4) return "";          // prevents overlap
-              return pct.toFixed(1) + "%";
-            },
-            color: "#222",
-            font: { weight: "bold", size: 14 },
-            textStrokeColor: "#fff",
-            textStrokeWidth: 2,
-            anchor: "center",
-            align: "center",
-            offset: 6,
-            clamp: true
-          },
+          legend: { position: "top", labels: { boxWidth: 14, padding: 10 } },
           tooltip: {
             callbacks: {
               label: (context) => {
                 const label = context.label || "";
                 const v = Number(context.raw || 0);
-                const values = context.dataset.data || [];
-                const t = values.reduce((a, b) => a + Number(b || 0), 0);
+                const vals = context.dataset.data || [];
+                const t = vals.reduce((a,b)=>a+(Number(b)||0), 0);
                 const pct = t ? (v / t) * 100 : 0;
-                return `${label}: ${v.toFixed(1)} (${pct.toFixed(1)}%)`;
+                return `${label}: ${v.toFixed(1)} hrs (${pct.toFixed(1)}%)`;
               }
             }
           }
         }
       }
     });
+  }
 
-    // ---- Download button (Blob download + Safari fallback) ----
-    if (downloadBtn) {
-      downloadBtn.addEventListener("click", () => {
-        const filename = "life-balance-chart.png";
-        const canvas = chart.canvas;
+  function updateUI(){
+    const state = getHoursState();
+    saveState(state);
 
-        if (canvas.toBlob) {
-          canvas.toBlob((blob) => {
-            if (!blob) {
-              const dataUrl = canvas.toDataURL("image/png");
-              window.open(dataUrl, "_blank");
-              return;
-            }
+    const used = Object.values(state).reduce((a,b)=>a+b, 0);
+    const remaining = WEEK - used;
 
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-          }, "image/png");
-        } else {
-          const dataUrl = canvas.toDataURL("image/png");
-          window.open(dataUrl, "_blank");
-        }
-      });
+    totalUsedEl.textContent = fmtNum(used);
+    totalRemainingEl.textContent = fmtNum(remaining);
+
+    pctUsedEl.textContent = fmtPct(used / WEEK);
+    pctRemainingEl.textContent = fmtPct((WEEK - used) / WEEK);
+
+    for (const c of CATEGORIES){
+      const v = state[c.key] || 0;
+      document.getElementById("pct_" + c.key).textContent = fmtPct(v / WEEK);
     }
-  </script>
+
+    if (used > WEEK){
+      statusEl.className = "status bad";
+      statusEl.textContent = `Total exceeds ${WEEK} hours by ${(used - WEEK).toFixed(1)}. Adjust inputs.`;
+    } else {
+      statusEl.className = "status ok";
+      statusEl.textContent = `You have ${(WEEK - used).toFixed(1)} hours remaining.`;
+    }
+
+    const items = CATEGORIES
+      .map(c => ({ label: c.label, value: state[c.key] || 0, color: c.color }))
+      .filter(x => x.value > 0)
+      .sort((a,b)=>b.value-a.value);
+
+    chart.data.labels = items.map(x=>x.label);
+    chart.data.datasets[0].data = items.map(x=>x.value);
+    chart.data.datasets[0].backgroundColor = items.map(x=>x.color);
+    chart.update();
+  }
+
+  let rafPending = false;
+  function onAnyChange(){
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      updateUI();
+    });
+  }
+
+  downloadPngBtn.addEventListener("click", () => {
+    const canvas = chart.canvas;
+    const filename = "life-balance-chart.png";
+    if (canvas.toBlob){
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }, "image/png");
+    } else {
+      window.open(canvas.toDataURL("image/png"), "_blank");
+    }
+  });
+
+  printBtn.addEventListener("click", () => window.print());
+
+  clearBtn.addEventListener("click", () => {
+    if (!confirm("Clear all hours?")) return;
+    for (const c of CATEGORIES){
+      document.getElementById("hours_" + c.key).value = "";
+    }
+    saveState({});
+    updateUI();
+  });
+
+  // boot
+  const state = loadState();
+  buildTable(state);
+  initChart();
+  updateUI();
+})();
+</script>
+</body>
+</html>
 
 </body>
 </html>

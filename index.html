@@ -19,9 +19,9 @@
       --ok:#147a3a;
 
       /* Brand */
-      --brand:#28456A;              /* used for headings */
+      --brand:#28456A;              /* headings + buttons */
       --brand-muted:#5E6F86;
-      --brand-header-bg:#28456A;    /* deep maroon header background */
+      --brand-header-bg:#28456A;    /* header background (blue) */
     }
 
     *{ box-sizing:border-box; }
@@ -43,34 +43,22 @@
       margin: 6px auto 18px auto;
       max-width: 1100px;
       border-radius: 0;
+      overflow: hidden;
     }
 
     .brand-left{
       display:flex;
       align-items:center;
-      gap: 14px;
-      padding: 14px 18px;
+      padding: 12px 18px;
+      gap: 12px;
+      min-width: 0;
     }
 
-    .brand-logo{
-      font-family: "Times New Roman", Georgia, "Libre Baskerville", serif;
-      font-size: 46px;
-      font-weight: 400;
-      color: #ffffff;
-      border-right: 2px solid rgba(255,255,255,0.85);
-      padding-right: 16px;
-      line-height: 1;
-      letter-spacing: 2px;
-      white-space: nowrap;
-    }
-
-    .brand-name{
-      font-family: "Times New Roman", Georgia, "Libre Baskerville", serif;
-      font-size: 22px;
-      letter-spacing: 3px;
-      color: #ffffff;
-      text-transform: uppercase;
-      white-space: nowrap;
+    /* Use the real logo image for exact match */
+    .brand-logo-img{
+      height: 56px;   /* adjust if you want it taller/shorter */
+      width: auto;
+      display: block;
     }
 
     .brand-right{
@@ -88,8 +76,7 @@
 
     @media (max-width: 980px){
       .brand-right{ display:none; } /* keep header clean on narrow screens */
-      .brand-name{ font-size: 18px; letter-spacing: 1px; }
-      .brand-logo{ font-size: 38px; }
+      .brand-logo-img{ height: 46px; }
     }
 
     @media (max-width: 900px){
@@ -210,7 +197,7 @@
       .wrap { grid-template-columns: 1fr; }
       .chartBox { height: 520px; }
       .brand-header{ margin-bottom: 24px; }
-      .brand-right{ display:flex !important; } /* show tagline on print */
+      .brand-right{ display:flex !important; }
     }
   </style>
 </head>
@@ -218,13 +205,14 @@
 <body>
   <!-- Branded Header -->
   <div class="brand-header">
-  <div class="brand-left">
-    <img
-      src="rl-logo-white.png"
-      alt="Robertson Lowstuter"
-      class="brand-logo-img"
-    />
-  </div>
+    <div class="brand-left">
+      <!-- IMPORTANT: put rl-logo-white.png in the repo root next to index.html -->
+      <img
+        src="rl-logo-white.png"
+        alt="Robertson Lowstuter"
+        class="brand-logo-img"
+      />
+    </div>
     <div class="brand-right">
       “Create Uncommon Results!®”
     </div>
@@ -283,7 +271,7 @@
 <script>
 (() => {
   const WEEK = 168;
-  const LS_KEY = "life_balance_hours_brand_tagline_v1";
+  const LS_KEY = "life_balance_hours_brand_tagline_logo_v1";
 
   const CATEGORIES = [
     { label: "Family",            key: "family",           color: "#CEA8F0" },
